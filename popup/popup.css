@@ -328,6 +328,171 @@ select.field-input {
   display: none; /* 隐藏旧的复选框布局 */
 }
 
+/* 自定义下拉框样式 */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.select-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-display:hover {
+  border-color: #9ca3af;
+}
+
+.select-display:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.select-value {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.select-value:empty::before {
+  content: attr(placeholder);
+  color: #9ca3af;
+}
+
+.select-arrow {
+  margin-left: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+/* 下拉选项列表 */
+.select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.select-dropdown.hidden {
+  display: none;
+}
+
+.select-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  color: #374151;
+}
+
+.select-option:last-child {
+  border-bottom: none;
+}
+
+.select-option:hover {
+  background-color: #f8fafc;
+  color: #1f2937;
+}
+
+.select-option.add-new {
+  background-color: #f8fafc;
+  color: #059669;
+  font-weight: 500;
+}
+
+.select-option.add-new:hover {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.add-option-content {
+  display: flex;
+  align-items: center;
+}
+
+.add-option-content i {
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+/* 新增选项输入框 */
+.new-option-input-container {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.new-option-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+}
+
+.new-option-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.new-option-add-btn,
+.new-option-cancel-btn {
+  margin-left: 6px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.new-option-add-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.new-option-add-btn:hover {
+  background-color: #059669;
+}
+
+.new-option-cancel-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.new-option-cancel-btn:hover {
+  background-color: #dc2626;
+}
+
 .checkbox-item {
   display: flex;
   align-items: center;

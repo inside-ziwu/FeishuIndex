@@ -22,6 +22,7 @@ class PopupManager {
     this.initElements();
     this.bindEvents();
     this.init();
+    this.setupGlobalClickHandler();
   }
 
   /**
@@ -291,7 +292,7 @@ class PopupManager {
 
       // 更新状态
       this.updateStatus();
-      this.showMessage('字段加载完成', 'success');
+      // 字段加载完成，无需显示提示（避免信息过载）
 
     } catch (error) {
       console.error('加载字段失败:', error);
@@ -519,6 +520,16 @@ class PopupManager {
       this.validateForm();
     });
 
+    // 防止回车触发表单提交
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        // 对于textarea，允许换行；对于input，阻止表单提交
+        if (input.tagName === 'INPUT') {
+          e.preventDefault();
+        }
+      }
+    });
+
     return input;
   }
 
@@ -545,97 +556,228 @@ class PopupManager {
   }
 
   /**
-   * 创建单选输入框
+   * 创建单选输入框 - 标准下拉框交互
    */
   createSingleSelectInput(field) {
     const container = document.createElement('div');
-    container.className = 'single-select-container';
+    container.className = 'custom-select-container';
 
-    const select = document.createElement('select');
-    select.className = 'field-input';
-    select.name = field.name;
+    // 创建选择框显示区域
+    const selectDisplay = document.createElement('div');
+    selectDisplay.className = 'select-display';
 
-    // 添加空选项
-    const emptyOption = document.createElement('option');
-    emptyOption.value = '';
-    emptyOption.textContent = `-- 请选择${field.name} --`;
-    select.appendChild(emptyOption);
+    const selectValue = document.createElement('div');
+    selectValue.className = 'select-value';
+    selectValue.textContent = `请选择${field.name}...`;
+
+    const selectArrow = document.createElement('div');
+    selectArrow.className = 'select-arrow';
+    selectArrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
+
+    selectDisplay.appendChild(selectValue);
+    selectDisplay.appendChild(selectArrow);
+
+    // 创建下拉选项列表
+    const dropdown = document.createElement('div');
+    dropdown.className = 'select-dropdown hidden';
 
     // 添加现有选项
+    const existingOptions = new Set(field.options || []);
+
     if (field.options && field.options.length > 0) {
       field.options.forEach(option => {
-        const optionElement = document.createElement('option');
-        optionElement.value = option;
-        optionElement.textContent = option;
-        select.appendChild(optionElement);
+        const optionItem = this.createSelectOption(option, false, field.name, selectValue, selectArrow, dropdown);
+        dropdown.appendChild(optionItem);
       });
     }
 
-    // 添加输入新选项的功能
-    const inputGroup = document.createElement('div');
-    inputGroup.className = 'new-option-input';
-    inputGroup.style.display = 'none';
+    // 添加新增选项项
+    const addOptionItem = this.createSelectOption('+ 新增选项', true, field.name, selectValue, selectArrow, dropdown);
+    dropdown.appendChild(addOptionItem);
 
-    const newOptionInput = document.createElement('input');
-    newOptionInput.type = 'text';
-    newOptionInput.className = 'field-input';
-    newOptionInput.placeholder = `输入新的${field.name}`;
+    // 点击选择框展开/收起下拉
+    selectDisplay.addEventListener('click', (e) => {
+      e.stopPropagation();
 
-    const addOptionBtn = document.createElement('button');
-    addOptionBtn.type = 'button';
-    addOptionBtn.className = 'btn btn-secondary';
-    addOptionBtn.textContent = '添加';
-    addOptionBtn.style.marginTop = '8px';
-
-    // 切换到输入新选项模式
-    const toggleNewOption = document.createElement('button');
-    toggleNewOption.type = 'button';
-    toggleNewOption.className = 'toggle-new-option';
-    toggleNewOption.textContent = '+ 新增选项';
-    toggleNewOption.style.cssText = 'margin-top: 8px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa; cursor: pointer; font-size: 0.8em;';
-
-    toggleNewOption.addEventListener('click', () => {
-      inputGroup.style.display = inputGroup.style.display === 'none' ? 'block' : 'none';
-      if (inputGroup.style.display === 'block') {
-        newOptionInput.focus();
+      // 如果当前是展开状态，则收起
+      if (!dropdown.classList.contains('hidden')) {
+        this.closeDropdown(dropdown, selectArrow);
+      } else {
+        this.openDropdown(dropdown, selectArrow);
       }
     });
 
-    // 添加新选项
-    addOptionBtn.addEventListener('click', () => {
-      const newOption = newOptionInput.value.trim();
-      if (newOption) {
-        // 检查是否已存在
-        const existingOption = Array.from(select.options).find(option => option.value === newOption);
-        if (!existingOption) {
-          const newOptionElement = document.createElement('option');
-          newOptionElement.value = newOption;
-          newOptionElement.textContent = newOption;
-          select.appendChild(newOptionElement);
-        }
+    container.appendChild(selectDisplay);
+    container.appendChild(dropdown);
 
-        select.value = newOption;
-        this.userInput[field.name] = newOption;
-        newOptionInput.value = '';
-        inputGroup.style.display = 'none';
-        this.validateForm();
-      }
-    });
-
-    // 监听选择变化
-    select.addEventListener('change', (e) => {
-      this.userInput[field.name] = e.target.value;
-      this.validateForm();
-    });
-
-    container.appendChild(select);
-    container.appendChild(toggleNewOption);
-
-    inputGroup.appendChild(newOptionInput);
-    inputGroup.appendChild(addOptionBtn);
-    container.appendChild(inputGroup);
+    // 将下拉框信息存储到容器上，供全局点击事件使用
+    container.dropdownElement = dropdown;
+    container.selectArrowElement = selectArrow;
 
     return container;
+  }
+
+  /**
+   * 创建选择选项项
+   */
+  createSelectOption(text, isAddNew, fieldName, selectValue, selectArrow, dropdown) {
+    const optionItem = document.createElement('div');
+    optionItem.className = `select-option ${isAddNew ? 'add-new' : ''}`;
+
+    if (isAddNew) {
+      // 新增选项 - 点击后显示输入框
+      optionItem.innerHTML = `
+        <div class="add-option-content">
+          <i class="fas fa-plus"></i>
+          <span>新增选项</span>
+        </div>
+      `;
+
+      optionItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showAddOptionInput(optionItem, fieldName, selectValue, selectArrow, dropdown);
+      });
+    } else {
+      // 普通选项
+      optionItem.textContent = text;
+      optionItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectOption(text, fieldName, selectValue, selectArrow, dropdown);
+      });
+    }
+
+    return optionItem;
+  }
+
+  /**
+   * 显示新增选项输入框
+   */
+  showAddOptionInput(optionItem, fieldName, selectValue, selectArrow, dropdown) {
+    const inputContainer = document.createElement('div');
+    inputContainer.className = 'new-option-input-container';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'new-option-input';
+    input.placeholder = '输入新选项名称...';
+
+    const addButton = document.createElement('button');
+    addButton.className = 'new-option-add-btn';
+    addButton.innerHTML = '<i class="fas fa-check"></i>';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'new-option-cancel-btn';
+    cancelButton.innerHTML = '<i class="fas fa-times"></i>';
+
+    inputContainer.appendChild(input);
+    inputContainer.appendChild(addButton);
+    inputContainer.appendChild(cancelButton);
+
+    // 替换原选项项
+    optionItem.replaceWith(inputContainer);
+    input.focus();
+
+    // 添加事件处理
+    const addNewOption = () => {
+      const value = input.value.trim();
+      if (value) {
+        this.addNewOption(value, fieldName, selectValue, selectArrow, dropdown);
+      }
+    };
+
+    const cancelAdd = () => {
+      inputContainer.replaceWith(optionItem);
+    };
+
+    addButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault(); // 🔥 关键修复：阻止表单提交
+      addNewOption();
+    });
+
+    cancelButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault(); // 🔥 关键修复：阻止表单提交
+      cancelAdd();
+    });
+
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault(); // 阻止表单提交
+        addNewOption();
+      } else if (e.key === 'Escape') {
+        e.preventDefault(); // 阻止表单提交
+        cancelAdd();
+      }
+    });
+  }
+
+  /**
+   * 添加新选项
+   */
+  addNewOption(value, fieldName, selectValue, selectArrow, dropdown) {
+    // 创建新选项并插入到"新增选项"之前
+    const newOption = this.createSelectOption(value, false, fieldName, selectValue, selectArrow, dropdown);
+    const addNewOption = dropdown.querySelector('.add-new');
+    dropdown.insertBefore(newOption, addNewOption);
+
+    // 选择新选项
+    this.selectOption(value, fieldName, selectValue, selectArrow, dropdown);
+
+    // 新增选项成功，无需显示提示（避免信息过载）
+  }
+
+  /**
+   * 选择选项
+   */
+  selectOption(value, fieldName, selectValue, selectArrow, dropdown) {
+    selectValue.textContent = value;
+    this.userInput[fieldName] = value;
+
+    // 更新箭头为关闭状态
+    selectArrow.innerHTML = '<i class="fas fa-times"></i>';
+
+    // 收起下拉
+    this.closeDropdown(dropdown, selectArrow);
+
+    this.validateForm();
+  }
+
+  /**
+   * 打开下拉
+   */
+  openDropdown(dropdown, selectArrow) {
+    dropdown.classList.remove('hidden');
+    selectArrow.innerHTML = '<i class="fas fa-chevron-up"></i>';
+  }
+
+  /**
+   * 收起下拉
+   */
+  closeDropdown(dropdown, selectArrow) {
+    dropdown.classList.add('hidden');
+    selectArrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
+  }
+
+  /**
+   * 设置全局点击处理器 - 用于收起所有下拉框
+   */
+  setupGlobalClickHandler() {
+    // 只设置一次全局点击监听器
+    document.addEventListener('click', (e) => {
+      // 查找所有单选字段容器
+      const selectContainers = document.querySelectorAll('.custom-select-container');
+
+      selectContainers.forEach(container => {
+        if (container.dropdownElement && container.selectArrowElement) {
+          // 如果点击不在当前容器内，收起下拉框
+          if (!container.contains(e.target)) {
+            this.closeDropdown(container.dropdownElement, container.selectArrowElement);
+          }
+        }
+      });
+    });
   }
 
   /**
@@ -676,6 +818,13 @@ class PopupManager {
 
     multiInput.addEventListener('input', () => {
       this.processMultiSelectInput(field, multiInput.value);
+    });
+
+    // 防止回车触发表单提交
+    multiInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault(); // 阻止表单提交
+      }
     });
 
     container.appendChild(tagsContainer);
