@@ -140,13 +140,64 @@ class PopupManager {
         this.currentUrl = tab.url;
         this.currentTitle = tab.title;
 
-        // pageTitle 已在新设计中移除
-        // this.pageTitle.textContent = this.truncateText(this.currentTitle, 50);
+        // 提取页面描述信息
+        this.currentDescription = await this.extractPageDescription(tab.id);
+
+        console.log(`📄 页面信息提取 - 标题: ${this.currentTitle}, 描述: ${this.currentDescription?.substring(0, 50)}...`);
       }
     } catch (error) {
       console.error('获取页面信息失败:', error);
       this.currentUrl = '';
       this.currentTitle = '未知页面';
+      this.currentDescription = '';
+    }
+  }
+
+  /**
+   * 提取页面描述信息
+   * @param {number} tabId - 标签页ID
+   * @returns {Promise<string>} - 页面描述
+   */
+  async extractPageDescription(tabId) {
+    try {
+      // 在页面中执行脚本获取meta信息
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: () => {
+          // 优先级：og:description > meta description > 第一个p标签内容
+          const getMetaContent = (selector) => {
+            const element = document.querySelector(selector);
+            return element ? element.getAttribute('content') : null;
+          };
+
+          // 1. 尝试获取og:description
+          let description = getMetaContent('meta[property="og:description"]');
+
+          // 2. 尝试获取meta name="description"
+          if (!description) {
+            description = getMetaContent('meta[name="description"]');
+          }
+
+          // 3. 尝试获取第一个有意义的p标签
+          if (!description) {
+            const paragraphs = document.querySelectorAll('p');
+            for (let p of paragraphs) {
+              const text = p.textContent?.trim();
+              if (text && text.length > 20 && text.length < 200) {
+                description = text;
+                break;
+              }
+            }
+          }
+
+          return description || '';
+        }
+      });
+
+      return results[0]?.result || '';
+    } catch (error) {
+      console.warn('提取页面描述失败:', error);
+      return '';
     }
   }
 
@@ -446,6 +497,14 @@ class PopupManager {
       input.type = 'text';
       input.className = 'field-input text-input';
       input.placeholder = `请输入${field.name}`;
+
+      // 默认填充页面信息（标题优先，有描述时组合）
+      const defaultValue = this.getDefaultPageValue();
+      if (defaultValue) {
+        input.value = defaultValue;
+        this.userInput[field.name] = defaultValue;
+        console.log(`✅ 第一个文本字段 "${field.name}" 已填充默认值: ${defaultValue.substring(0, 50)}...`);
+      }
     } else {
       // 其他文本字段使用多行文本框
       input = document.createElement('textarea');
@@ -461,6 +520,28 @@ class PopupManager {
     });
 
     return input;
+  }
+
+  /**
+   * 获取默认页面值
+   * @returns {string} - 默认填充的页面信息
+   */
+  getDefaultPageValue() {
+    // 优先使用标题，如果有描述则组合
+    if (this.currentTitle) {
+      if (this.currentDescription && this.currentDescription !== this.currentTitle) {
+        // 标题和描述都存在且不同时，组合显示
+        return `${this.currentTitle} - ${this.currentDescription}`;
+      } else {
+        // 只有标题或描述与标题相同时，只显示标题
+        return this.currentTitle;
+      }
+    } else if (this.currentDescription) {
+      // 没有标题但有描述时，使用描述
+      return this.currentDescription;
+    }
+
+    return '';
   }
 
   /**
