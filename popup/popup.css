@@ -1,0 +1,622 @@
+/**
+ * FeishuIndex 弹窗样式
+ * 紧凑、现代、高效的设计
+ */
+
+/* 重置和基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  line-height: 1.5;
+  color: #333;
+  background-color: #ffffff;
+  width: 450px; /* 修正为合适的宽度，Chrome扩展弹窗推荐宽度 */
+  max-width: 450px; /* 确保最大宽度限制 */
+  min-width: 350px; /* 设置最小宽度防止过窄 */
+  max-height: 600px; /* 修正高度 */
+  overflow: hidden;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 600px; /* 修正最大高度 */
+  min-height: 500px; /* 调整最小高度 */
+}
+
+/* 头部样式 */
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  flex-shrink: 0;
+}
+
+.header h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.page-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-url {
+  font-size: 0.9em;
+  opacity: 0.8;
+  font-family: 'Monaco', 'Menlo', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 主内容区 */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+/* 加载状态 */
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e9ecef;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 错误状态 */
+.error-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.error-icon {
+  font-size: 3em;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.error-state h3 {
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.error-state p {
+  margin-bottom: 20px;
+  font-size: 0.9em;
+}
+
+/* 表单内容 */
+.form-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 动态字段样式 */
+.field-group {
+  margin-bottom: 20px;
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e9ecef;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.field-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-type {
+  font-size: 0.8em;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #e9ecef;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.field-type.link {
+  background: #d4edda;
+  color: #155724;
+}
+
+.field-type.text {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.field-type.single {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.field-type.multi {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.required-indicator {
+  color: #dc3545;
+  font-weight: 700;
+}
+
+/* 输入控件样式 */
+.field-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.95em;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.field-input:invalid {
+  border-color: #dc3545;
+}
+
+/* URL输入框特殊样式 */
+.url-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.url-input {
+  flex: 1;
+}
+
+.copy-url-btn {
+  padding: 10px 12px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.copy-url-btn:hover {
+  background: #5a6268;
+}
+
+.copy-url-btn:active {
+  transform: scale(0.95);
+}
+
+/* 文本域 */
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* 选择器 */
+select.field-input {
+  cursor: pointer;
+}
+
+/* 多选容器 */
+.multi-select-container {
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  padding: 8px;
+  background: white;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.checkbox-item label {
+  cursor: pointer;
+  flex: 1;
+  word-break: break-all;
+}
+
+.multi-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: inherit;
+}
+
+.multi-input::placeholder {
+  color: #adb5bd;
+}
+
+/* 操作按钮 */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  flex: 1;
+  min-height: 44px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+/* 按钮加载状态 */
+.btn-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 底部 */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: white;
+  border-top: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85em;
+  color: #6c757d;
+}
+
+.field-count {
+  background: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+}
+
+.options-btn {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.options-btn:hover {
+  background: #f8f9fa;
+}
+
+/* 确认对话框 */
+.confirm-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.confirm-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 360px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.confirm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 0;
+}
+
+.confirm-header h3 {
+  color: #495057;
+  font-size: 1.2em;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  color: #adb5bd;
+  padding: 4px;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #6c757d;
+}
+
+.confirm-body {
+  padding: 0 20px 20px;
+}
+
+.duplicate-info {
+  background: #fff3cd;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 16px 0;
+  border: 1px solid #ffeaa7;
+}
+
+.update-preview {
+  margin-top: 16px;
+}
+
+.update-preview h4 {
+  color: #495057;
+  font-size: 1em;
+  margin-bottom: 8px;
+}
+
+.update-preview ul {
+  margin-left: 20px;
+  color: #6c757d;
+  font-size: 0.9em;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.confirm-actions .btn {
+  flex: 1;
+}
+
+/* 消息提示 */
+.message-container {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid #667eea;
+  min-width: 250px;
+  max-width: 300px;
+  font-size: 0.9em;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.message.success {
+  border-left-color: #28a745;
+  background: #d4edda;
+  color: #155724;
+}
+
+.message.error {
+  border-left-color: #dc3545;
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.message.warning {
+  border-left-color: #ffc107;
+  background: #fff3cd;
+  color: #856404;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* 工具类 */
+.hidden {
+  display: none !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+.text-success {
+  color: #28a745 !important;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 响应式调整 */
+@media (max-width: 480px) {
+  body {
+    width: 100vw;
+  }
+
+  .container {
+    max-height: 100vh;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .confirm-content {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .message {
+    min-width: auto;
+    max-width: calc(100vw - 20px);
+  }
+}

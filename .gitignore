@@ -1,0 +1,77 @@
+# ======================
+# Chrome扩展项目 - Git忽略文件
+# ======================
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 编辑器和IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Node.js (如果添加构建工具)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 构建输出 (保留源码，忽略打包后的临时文件)
+build/
+dist-temp/
+*.log
+
+# TypeScript源码 (已有对应的JS代码)
+src/
+*.ts
+*.d.ts
+
+# Chrome扩展特有
+*.crx
+*.pem
+key.pem
+# dist/ 目录包含重要文件，不忽略
+
+# 开发调试文件
+*.tmp
+*.temp
+*.bak
+*.backup
+debug-*
+test-*
+
+# 敏感信息
+.env
+.env.local
+.env.*.local
+config.local.*
+secrets.json
+
+# 文档草稿
+draft-*
+草稿-*
+草稿.*
+draft.*
+
+# 性能和日志文件
+performance-*.log
+error-*.log
+monitoring-*.json
+
+# 临时测试文件
+test-output/
+coverage/
+.nyc_output/
+
+# Claude相关
+.claude/settings.local.json

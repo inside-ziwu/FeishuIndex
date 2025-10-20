@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FeishuIndex</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <header class="header">
+      <h1>📋 FeishuIndex</h1>
+      <div class="page-info">
+        <div class="page-title" id="pageTitle">加载中...</div>
+        <div class="page-url" id="pageUrl">获取中...</div>
+      </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main" id="mainContent">
+      <!-- 加载状态 -->
+      <div id="loadingState" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在加载字段信息...</p>
+      </div>
+
+      <!-- 配置错误状态 -->
+      <div id="configErrorState" class="error-state hidden">
+        <div class="error-icon">⚙️</div>
+        <h3>需要配置</h3>
+        <p>请先完成飞书应用配置</p>
+        <button id="openConfigBtn" class="btn btn-primary">打开配置</button>
+      </div>
+
+      <!-- 字段缺失错误状态 -->
+      <div id="fieldErrorState" class="error-state hidden">
+        <div class="error-icon">🔗</div>
+        <h3>缺少必需字段</h3>
+        <p id="fieldErrorMessage">请先在表中新建链接列</p>
+        <button id="refreshFieldsBtn" class="btn btn-secondary">刷新字段</button>
+      </div>
+
+      <!-- 表单内容 -->
+      <div id="formContent" class="form-content hidden">
+        <form id="saveForm">
+          <!-- 动态字段将在这里渲染 -->
+          <div id="dynamicFields"></div>
+
+          <!-- 底部操作区 -->
+          <div class="form-actions">
+            <button type="submit" id="saveBtn" class="btn btn-primary" disabled>
+              <span class="btn-text">💾 保存记录</span>
+              <span class="btn-loading hidden">
+                <span class="btn-spinner"></span>
+                保存中...
+              </span>
+            </button>
+            <button type="button" id="resetBtn" class="btn btn-secondary">🔄 重置</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <!-- 底部信息 -->
+    <footer class="footer">
+      <div class="status-info">
+        <span id="statusText">就绪</span>
+        <span id="fieldCount" class="field-count"></span>
+      </div>
+      <button id="openOptionsBtn" class="options-btn">⚙️</button>
+    </footer>
+  </div>
+
+  <!-- 覆盖确认弹窗 -->
+  <div id="confirmDialog" class="confirm-dialog hidden">
+    <div class="confirm-content">
+      <div class="confirm-header">
+        <h3>发现重复记录</h3>
+        <button id="closeConfirmBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="confirm-body">
+        <p>检测到相同的URL已存在于表格中，是否要覆盖更新？</p>
+        <div class="duplicate-info" id="duplicateInfo">
+          <!-- 重复记录信息将在这里显示 -->
+        </div>
+        <div class="update-preview">
+          <h4>将要更新的字段：</h4>
+          <div id="updatePreview"></div>
+        </div>
+      </div>
+      <div class="confirm-actions">
+        <button id="cancelUpdateBtn" class="btn btn-secondary">取消</button>
+        <button id="confirmUpdateBtn" class="btn btn-primary">确认覆盖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 消息提示 -->
+  <div id="messageContainer" class="message-container"></div>
+
+  <!-- 核心库文件 -->
+  <script src="../lib/field-mapper.js"></script>
+  <script src="../lib/feishu-api.js"></script>
+  <script src="../lib/storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

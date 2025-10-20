@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FeishuIndex 配置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>⚙️ FeishuIndex 配置</h1>
+      <p class="subtitle">将网页URL保存到飞书多维表格</p>
+    </header>
+
+    <main class="main">
+      <!-- 配置表单 -->
+      <section class="config-section">
+        <h2>🚀 飞书应用配置</h2>
+        <div class="form-group">
+          <label for="appId">App ID:</label>
+          <input type="text" id="appId" placeholder="cli_xxxxxxxxxxxxxxxxxxxxxx" class="form-input">
+          <div class="help-text">在飞书开放平台获取应用ID</div>
+        </div>
+
+        <div class="form-group">
+          <label for="appSecret">App Secret:</label>
+          <div class="password-input">
+            <input type="password" id="appSecret" placeholder="••••••••••••••••••••••••••••••••" class="form-input">
+            <button type="button" id="toggleSecret" class="toggle-btn">👁 显示</button>
+          </div>
+          <div class="help-text">在飞书开放平台获取应用密钥</div>
+        </div>
+      </section>
+
+      <section class="config-section">
+        <h2>📊 表格配置</h2>
+        <div class="form-group">
+          <label for="tableUrl">表格URL:</label>
+          <input type="url" id="tableUrl" placeholder="https://feishu.cn/base/bxxxxxx..." class="form-input">
+          <div class="help-text">粘贴飞书多维表格的链接</div>
+        </div>
+      </section>
+
+      <!-- 操作按钮 -->
+      <section class="actions">
+        <button id="saveConfig" class="btn btn-primary" disabled>💾 保存配置</button>
+        <button id="testConnection" class="btn btn-secondary" disabled>🔗 测试连接</button>
+        <button id="clearConfig" class="btn btn-danger">🗑️ 清除配置</button>
+      </section>
+
+      <!-- 连接测试结果 -->
+      <section id="testResult" class="test-result hidden">
+        <h3>📋 连接测试结果</h3>
+        <div id="testResultContent"></div>
+      </section>
+
+      <!-- 使用说明 -->
+      <section class="help-section">
+        <h2>📖 使用说明</h2>
+        <div class="help-content">
+          <h3>1. 飞书应用配置</h3>
+          <ol>
+            <li>访问 <a href="https://open.feishu.cn/app" target="_blank">飞书开放平台</a></li>
+            <li>创建应用或选择已有应用</li>
+            <li>获取 App ID 和 App Secret</li>
+            <li>在权限管理中添加 "多维表格" 权限</li>
+          </ol>
+
+          <h3>2. 表格配置</h3>
+          <ol>
+            <li>打开要使用的飞书多维表格</li>
+            <li>复制浏览器地址栏中的URL</li>
+            <li>确保表格中有链接类型的字段（必需）</li>
+            <li>可以添加文本、单选、多选字段（可选）</li>
+          </ol>
+
+          <h3>3. 使用扩展</h3>
+          <ol>
+            <li>完成配置并通过连接测试</li>
+            <li>在任意网页点击扩展图标</li>
+            <li>填写信息并点击保存</li>
+            <li>数据将自动保存到您的飞书表格中</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 支持的字段类型 -->
+      <section class="field-types">
+        <h2>🎯 支持的字段类型</h2>
+        <div class="field-grid">
+          <div class="field-card required">
+            <div class="field-icon">🔗</div>
+            <h3>链接字段</h3>
+            <p>类型：超链接</p>
+            <p class="required-tag">必需</p>
+            <p>自动填入当前网页URL</p>
+          </div>
+
+          <div class="field-card">
+            <div class="field-icon">📝</div>
+            <h3>文本字段</h3>
+            <p>类型：文本/多行文本</p>
+            <p class="optional-tag">可选</p>
+            <p>用于填写关键信息、备注等</p>
+          </div>
+
+          <div class="field-card">
+            <div class="field-icon">🎯</div>
+            <h3>单选字段</h3>
+            <p>类型：单选</p>
+            <p class="optional-tag">可选</p>
+            <p>下拉选择或输入新选项</p>
+          </div>
+
+          <div class="field-card">
+            <div class="field-icon">☑️</div>
+            <h3>多选字段</h3>
+            <p>类型：多选</p>
+            <p class="optional-tag">可选</p>
+            <p>多选或批量输入标签</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>FeishuIndex v1.0.0 | 将网页一键保存到飞书表格</p>
+    </footer>
+  </div>
+
+  <!-- 加载提示 -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p>处理中...</p>
+  </div>
+
+  <!-- 消息提示 -->
+  <div id="messageContainer" class="message-container"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>
