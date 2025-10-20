@@ -236,6 +236,9 @@ class PopupManager {
       this.renderForm();
       this.showForm();
 
+      // 验证表单并更新状态
+      this.validateForm();
+
       // 更新状态
       this.updateStatus();
       this.showMessage('字段加载完成', 'success');
