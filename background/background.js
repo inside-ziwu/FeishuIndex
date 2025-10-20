@@ -112,6 +112,9 @@ async function updateExistingRecord(request, sendResponse) {
  * @returns {Promise<Object>} - 保存结果
  */
 async function saveUrlRecord(request, sendResponse) {
+  // 提前声明变量，确保在catch块中可以访问
+  let app_token, table_id, config;
+
   try {
     // 1. 频率控制检查
     if (!(await Storage.storage.canSave())) {
@@ -130,10 +133,10 @@ async function saveUrlRecord(request, sendResponse) {
       });
     }
 
-    const config = configResult.config;
+    config = configResult.config;
 
     // 3. 解析表格URL
-    const { app_token, table_id } = globalThis.FeishuAPI.feishuAPI.parseTableUrl(config.tableUrl);
+    ({ app_token, table_id } = globalThis.FeishuAPI.feishuAPI.parseTableUrl(config.tableUrl));
 
     // 4. 获取Token
     const tenantToken = await globalThis.FeishuAPI.feishuAPI.getTenantToken(config.appId, config.appSecret);
@@ -219,6 +222,7 @@ async function saveUrlRecord(request, sendResponse) {
     console.error('保存记录失败:', error);
 
     // 检查是否需要触发错误自愈
+    // 支持嵌套错误信息，如 "更新记录失败: FieldNameNotFound"
     if (error.message.includes('FieldNameNotFound') ||
         error.message.includes('字段不存在') ||
         error.message.includes('field_name')) {
@@ -336,6 +340,11 @@ function mapErrorToUserMessage(errorMessage) {
     if (errorMessage.includes(key)) {
       return message;
     }
+  }
+
+  // 特殊处理嵌套错误信息
+  if (errorMessage.includes('更新记录失败:') || errorMessage.includes('创建记录失败:')) {
+    return '记录保存失败，请检查字段配置或稍后重试';
   }
 
   return '保存失败，请检查配置和网络连接';
