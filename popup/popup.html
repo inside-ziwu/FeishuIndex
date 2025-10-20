@@ -51,23 +51,31 @@
           <!-- 动态字段将在这里渲染 -->
           <div id="dynamicFields"></div>
 
-          <!-- 保存按钮 -->
-          <button type="submit" id="saveBtn" class="save-btn" disabled>
-            <span class="btn-text">保存到飞书</span>
-            <span class="btn-loading hidden">
-              <span class="btn-spinner"></span>
-              保存中...
-            </span>
-          </button>
+          <!-- 底部操作区 -->
+          <div class="form-actions">
+            <!-- 保存按钮 -->
+            <button type="submit" id="saveBtn" class="save-btn" disabled>
+              <span class="btn-text">保存到飞书</span>
+              <span class="btn-loading hidden">
+                <span class="btn-spinner"></span>
+                保存中...
+              </span>
+            </button>
+
+            <!-- 状态信息 -->
+            <div class="form-status">
+              <div class="status-left">
+                <span class="status-dot"></span>
+                <span class="status-text" id="statusText">已配置，可以使用</span>
+              </div>
+              <div class="status-right">
+                <span class="error-text" id="errorText"></span>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
     </main>
-
-    <!-- 底部状态栏 -->
-    <footer class="bottom-status">
-      <span class="status-dot"></span>
-      <span class="status-text" id="statusText">已配置，可以使用</span>
-    </footer>
   </div>
 
   <!-- 覆盖确认弹窗 -->
