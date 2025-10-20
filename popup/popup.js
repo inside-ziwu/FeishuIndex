@@ -65,6 +65,7 @@ class PopupManager {
 
     // 状态元素引用（现在只在底部显示）
     this.statusDot = document.querySelector('.status-dot');
+    this.errorText = document.getElementById('errorText');
   }
 
   /**
@@ -380,16 +381,11 @@ class PopupManager {
       this.dynamicFields.appendChild(fieldGroup);
     });
 
-    // 显示不支持字段的信息
+    // 只有不支持字段时才显示错误提示
     if (this.fieldsData.unsupportedFields.length > 0) {
-      const warningDiv = document.createElement('div');
-      warningDiv.className = 'field-warning';
-      warningDiv.innerHTML = `
-        <div class="warning-text">
-          ⚠️ 检测到 ${this.fieldsData.unsupportedFields.length} 个不支持的字段类型，将跳过处理
-        </div>
-      `;
-      this.dynamicFields.appendChild(warningDiv);
+      this.updateErrorStatus(`${this.fieldsData.unsupportedFields.length}个字段不支持`);
+    } else {
+      this.updateErrorStatus('');
     }
 
     // 初始化用户输入
@@ -464,7 +460,7 @@ class PopupManager {
     const copyBtn = document.createElement('button');
     copyBtn.type = 'button';
     copyBtn.className = 'copy-url-btn';
-    copyBtn.textContent = '📋 复制';
+    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
     copyBtn.addEventListener('click', () => this.copyToClipboard(this.currentUrl));
 
     container.appendChild(input);
@@ -556,7 +552,7 @@ class PopupManager {
   }
 
   /**
-   * 创建单选输入框 - 标准下拉框交互
+   * 创建单选输入框 - 修复X按钮交互逻辑
    */
   createSingleSelectInput(field) {
     const container = document.createElement('div');
@@ -574,8 +570,15 @@ class PopupManager {
     selectArrow.className = 'select-arrow';
     selectArrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
 
+    // 创建独立的清除按钮
+    const clearBtn = document.createElement('div');
+    clearBtn.className = 'select-clear hidden';
+    clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+    clearBtn.title = '清除选择';
+
     selectDisplay.appendChild(selectValue);
     selectDisplay.appendChild(selectArrow);
+    selectDisplay.appendChild(clearBtn);
 
     // 创建下拉选项列表
     const dropdown = document.createElement('div');
@@ -586,25 +589,37 @@ class PopupManager {
 
     if (field.options && field.options.length > 0) {
       field.options.forEach(option => {
-        const optionItem = this.createSelectOption(option, false, field.name, selectValue, selectArrow, dropdown);
+        const optionItem = this.createSelectOption(option, false, field.name, selectValue, clearBtn, selectArrow, dropdown);
         dropdown.appendChild(optionItem);
       });
     }
 
     // 添加新增选项项
-    const addOptionItem = this.createSelectOption('+ 新增选项', true, field.name, selectValue, selectArrow, dropdown);
+    const addOptionItem = this.createSelectOption('+ 新增选项', true, field.name, selectValue, clearBtn, selectArrow, dropdown);
     dropdown.appendChild(addOptionItem);
 
-    // 点击选择框展开/收起下拉
+    // 点击选择框展开/收起下拉（不包括清除按钮）
     selectDisplay.addEventListener('click', (e) => {
       e.stopPropagation();
+
+      // 如果点击的是清除按钮，不处理展开/收起逻辑
+      if (e.target === clearBtn || clearBtn.contains(e.target)) {
+        return;
+      }
 
       // 如果当前是展开状态，则收起
       if (!dropdown.classList.contains('hidden')) {
         this.closeDropdown(dropdown, selectArrow);
       } else {
+        // 否则展开下拉
         this.openDropdown(dropdown, selectArrow);
       }
+    });
+
+    // 清除按钮点击事件 - 独立处理清除逻辑
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.clearSelection(field.name, selectValue, clearBtn, selectArrow);
     });
 
     container.appendChild(selectDisplay);
@@ -613,6 +628,7 @@ class PopupManager {
     // 将下拉框信息存储到容器上，供全局点击事件使用
     container.dropdownElement = dropdown;
     container.selectArrowElement = selectArrow;
+    container.clearBtnElement = clearBtn;
 
     return container;
   }
@@ -620,7 +636,7 @@ class PopupManager {
   /**
    * 创建选择选项项
    */
-  createSelectOption(text, isAddNew, fieldName, selectValue, selectArrow, dropdown) {
+  createSelectOption(text, isAddNew, fieldName, selectValue, clearBtn, selectArrow, dropdown) {
     const optionItem = document.createElement('div');
     optionItem.className = `select-option ${isAddNew ? 'add-new' : ''}`;
 
@@ -635,14 +651,14 @@ class PopupManager {
 
       optionItem.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.showAddOptionInput(optionItem, fieldName, selectValue, selectArrow, dropdown);
+        this.showAddOptionInput(optionItem, fieldName, selectValue, clearBtn, selectArrow, dropdown);
       });
     } else {
       // 普通选项
       optionItem.textContent = text;
       optionItem.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.selectOption(text, fieldName, selectValue, selectArrow, dropdown);
+        this.selectOption(text, fieldName, selectValue, clearBtn, selectArrow, dropdown);
       });
     }
 
@@ -652,7 +668,7 @@ class PopupManager {
   /**
    * 显示新增选项输入框
    */
-  showAddOptionInput(optionItem, fieldName, selectValue, selectArrow, dropdown) {
+  showAddOptionInput(optionItem, fieldName, selectValue, clearBtn, selectArrow, dropdown) {
     const inputContainer = document.createElement('div');
     inputContainer.className = 'new-option-input-container';
 
@@ -681,7 +697,7 @@ class PopupManager {
     const addNewOption = () => {
       const value = input.value.trim();
       if (value) {
-        this.addNewOption(value, fieldName, selectValue, selectArrow, dropdown);
+        this.addNewOption(value, fieldName, selectValue, clearBtn, selectArrow, dropdown);
       }
     };
 
@@ -716,14 +732,14 @@ class PopupManager {
   /**
    * 添加新选项
    */
-  addNewOption(value, fieldName, selectValue, selectArrow, dropdown) {
+  addNewOption(value, fieldName, selectValue, clearBtn, selectArrow, dropdown) {
     // 创建新选项并插入到"新增选项"之前
-    const newOption = this.createSelectOption(value, false, fieldName, selectValue, selectArrow, dropdown);
+    const newOption = this.createSelectOption(value, false, fieldName, selectValue, clearBtn, selectArrow, dropdown);
     const addNewOption = dropdown.querySelector('.add-new');
     dropdown.insertBefore(newOption, addNewOption);
 
     // 选择新选项
-    this.selectOption(value, fieldName, selectValue, selectArrow, dropdown);
+    this.selectOption(value, fieldName, selectValue, clearBtn, selectArrow, dropdown);
 
     // 新增选项成功，无需显示提示（避免信息过载）
   }
@@ -731,15 +747,16 @@ class PopupManager {
   /**
    * 选择选项
    */
-  selectOption(value, fieldName, selectValue, selectArrow, dropdown) {
+  selectOption(value, fieldName, selectValue, clearBtn, selectArrow, dropdown) {
     selectValue.textContent = value;
     this.userInput[fieldName] = value;
 
-    // 更新箭头为关闭状态
-    selectArrow.innerHTML = '<i class="fas fa-times"></i>';
+    // 显示清除按钮，隐藏箭头
+    clearBtn.classList.remove('hidden');
+    selectArrow.classList.add('hidden');
 
     // 收起下拉
-    this.closeDropdown(dropdown, selectArrow);
+    dropdown.classList.add('hidden');
 
     this.validateForm();
   }
@@ -758,6 +775,26 @@ class PopupManager {
   closeDropdown(dropdown, selectArrow) {
     dropdown.classList.add('hidden');
     selectArrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
+  }
+
+  /**
+   * 清除选择 - 新增方法
+   */
+  clearSelection(fieldName, selectValue, clearBtn, selectArrow) {
+    // 恢复默认提示文本
+    selectValue.textContent = `请选择${fieldName}...`;
+
+    // 清除用户输入
+    this.userInput[fieldName] = '';
+
+    // 隐藏清除按钮，显示箭头
+    clearBtn.classList.add('hidden');
+    selectArrow.classList.remove('hidden');
+
+    // 重置箭头图标
+    selectArrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
+
+    this.validateForm();
   }
 
   /**
@@ -1176,6 +1213,55 @@ class PopupManager {
   }
 
   /**
+   * 获取字段类型的可读名称
+   * @param {number} type - 字段类型数值
+   * @returns {string} - 字段类型名称
+   */
+  getFieldTypeName(type) {
+    const typeNames = {
+      1: '文本',
+      2: '数字',
+      3: '单选',
+      4: '多选',
+      5: '日期',
+      11: '地理位置',
+      13: '电话',
+      15: '链接',
+      17: '人员',
+      18: '附件',
+      19: '复选框',
+      20: '查找引用',
+      21: '公式',
+      22: '关联记录',
+      23: '文件',
+      1001: '创建时间',
+      1002: '修改时间',
+      1003: '邮箱',
+      1004: '电话',
+      1005: '日期时间',
+      1006: '时间',
+      1007: '进度',
+      1008: '评分',
+      1009: '货币',
+      1010: '百分号',
+      1011: '自动编号',
+      1012: '条码',
+      1013: '按钮',
+      1014: '单向关联',
+      1015: '双向关联',
+      1016: '摘要',
+      1017: '成员',
+      1018: '部门',
+      1019: '层级',
+      1020: '群组',
+      1021: '公式引用',
+      1022: '查找引用-单向',
+      1023: '查找引用-双向'
+    };
+    return typeNames[type] || `未知类型(${type})`;
+  }
+
+  /**
    * 显示错误状态
    */
   showError(type, message = '') {
@@ -1206,6 +1292,13 @@ class PopupManager {
    */
   setStatus(text) {
     this.statusText.textContent = text;
+  }
+
+  /**
+   * 更新错误状态文本
+   */
+  updateErrorStatus(text) {
+    this.errorText.textContent = text;
   }
 
   /**

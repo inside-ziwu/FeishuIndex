@@ -7,14 +7,34 @@
  * - 1: 文本类字段 (可选)
  * - 3: 单选字段 (可选)
  * - 4: 多选字段 (可选)
+ * - 1001: 创建时间 (系统字段，跳过处理)
+ * - 1002: 最后更新时间 (系统字段，跳过处理)
  */
 
 // 字段类型映射表 - 基于飞书API的type值
 const FIELD_TYPES = {
   15: 'link',    // 链接类字段 - 必需字段
   1: 'text',     // 文本类字段 - 可选
+  2: 'number',   // 数字字段 - 可选（只读显示）
   3: 'single',   // 单选字段 - 可选
-  4: 'multi'     // 多选字段 - 可选
+  4: 'multi',    // 多选字段 - 可选
+  5: 'date',     // 日期字段 - 可选（只读显示）
+  13: 'phone',   // 电话字段 - 可选（只读显示）
+  17: 'person',  // 人员字段 - 可选（只读显示）
+  18: 'attachment', // 附件字段 - 可选（只读显示）
+  19: 'checkbox', // 复选框字段 - 可选（只读显示）
+  23: 'file',     // 文件字段 - 可选（只读显示）
+  1001: 'created_time', // 创建时间 - 跳过处理
+  1002: 'modified_time', // 最后更新时间 - 跳过处理
+  1003: 'email',   // 邮箱字段 - 可选（只读显示）
+  1004: 'phone2',  // 电话字段2 - 可选（只读显示）
+  1005: 'datetime', // 日期时间字段 - 可选（只读显示）
+  1006: 'time',    // 时间字段 - 可选（只读显示）
+  1007: 'progress', // 进度字段 - 可选（只读显示）
+  1008: 'rating',   // 评分字段 - 可选（只读显示）
+  1009: 'currency', // 货币字段 - 可选（只读显示）
+  1010: 'percent',  // 百分号字段 - 可选（只读显示）
+  1011: 'auto_number' // 自动编号字段 - 可选（只读显示）
 };
 
 /**
@@ -24,14 +44,17 @@ const FIELD_TYPES = {
  */
 function classifyField(field) {
   if (!field || typeof field.type !== 'number') {
-    return null;
+    return { error: 'invalid_field' };
   }
 
   const fieldType = FIELD_TYPES[field.type];
   if (!fieldType) {
-    // 不支持的字段类型，返回null
-    return null;
+    // 不支持的字段类型，返回特殊标记
+    return { error: 'unsupported_type', originalType: field.type };
   }
+
+  // 系统时间字段标记为跳过处理
+  const isSystemTimeField = fieldType === 'created_time' || fieldType === 'modified_time';
 
   return {
     name: field.field_name, // 修复：API返回的是field_name而不是name
@@ -39,6 +62,7 @@ function classifyField(field) {
     originalType: field.type,
     uiType: field.ui_type,
     required: fieldType === 'link', // 链接字段是必需的
+    skipProcessing: isSystemTimeField, // 标记是否跳过处理
     options: extractOptions(field)
   };
 }
@@ -68,14 +92,37 @@ function classifyFields(fields) {
     textFields: [],    // 文本类字段列表
     singleFields: [],  // 单选字段列表
     multiFields: [],   // 多选字段列表
+    readOnlyFields: [], // 只读字段列表（数字、日期等）
     unsupportedFields: [], // 不支持的字段列表
+    systemTimeFields: [], // 系统时间字段列表
     allSupportedFields: []   // 所有支持的字段（按原始顺序）
   };
 
   fields.forEach(field => {
     const classified = classifyField(field);
 
-    if (classified) {
+    // 处理错误情况
+    if (classified && classified.error) {
+      if (classified.error === 'invalid_field') {
+        console.log(`无效字段: ${field.field_name} (type: ${field.type})`);
+        // 不计入任何分类，静默跳过
+        return;
+      } else if (classified.error === 'unsupported_type') {
+        console.log(`不支持字段: ${field.field_name} (type: ${field.type})`);
+        result.unsupportedFields.push(field);
+        return;
+      }
+    }
+
+    // 正常字段处理
+    if (classified && !classified.error) {
+      // 系统时间字段单独处理，不计入支持字段
+      if (classified.skipProcessing) {
+        console.log(`系统时间字段: ${field.field_name} (type: ${field.type})`);
+        result.systemTimeFields.push(classified);
+        return; // 跳过后续处理
+      }
+
       result.allSupportedFields.push(classified);
 
       switch (classified.type) {
@@ -91,13 +138,25 @@ function classifyFields(fields) {
         case 'multi':
           result.multiFields.push(classified);
           break;
+        default:
+          // 其他字段类型（数字、日期等）归类为只读字段
+          result.readOnlyFields.push(classified);
+          break;
       }
-    } else {
-      result.unsupportedFields.push(field);
     }
   });
 
-  return result;
+  console.log(`字段分类结果: 支持${result.allSupportedFields.length}个, 系统时间${result.systemTimeFields.length}个, 只读${result.readOnlyFields.length}个, 不支持${result.unsupportedFields.length}个`);
+
+    // 详细调试信息：列出所有不支持的字段
+    if (result.unsupportedFields.length > 0) {
+      console.log('🔍 不支持的字段详情:');
+      result.unsupportedFields.forEach((field, index) => {
+        console.log(`  ${index + 1}. 字段名: ${field.field_name}, type: ${field.type}, ui_type: ${field.ui_type}`);
+      });
+    }
+
+    return result;
 }
 
 /**
