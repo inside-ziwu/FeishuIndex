@@ -254,19 +254,78 @@ select.field-input {
 
 /* 多选容器 */
 .multi-select-container {
-  border: 2px solid #e9ecef;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 8px;
   background: white;
 }
 
-.checkbox-group {
+/* 标签容器（单行显示） */
+.tags-container {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
-  max-height: 120px;
-  overflow-y: auto;
+  min-height: 36px;
+  align-items: center;
+}
+
+/* 标签项 - 按钮样式 */
+.tag-item {
+  display: inline-block;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.tag-item:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #f8f9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+}
+
+.tag-item.selected {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.tag-item.selected:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+/* 批量输入框 */
+.multi-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.multi-input::placeholder {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* 保留旧的复选框样式以防兼容性问题 */
+.checkbox-group {
+  display: none; /* 隐藏旧的复选框布局 */
 }
 
 .checkbox-item {
@@ -284,19 +343,6 @@ select.field-input {
   cursor: pointer;
   flex: 1;
   word-break: break-all;
-}
-
-.multi-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #e9ecef;
-  border-radius: 4px;
-  font-size: 0.9em;
-  font-family: inherit;
-}
-
-.multi-input::placeholder {
-  color: #adb5bd;
 }
 
 /* 保存按钮 */

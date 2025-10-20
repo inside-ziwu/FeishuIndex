@@ -489,9 +489,6 @@ class PopupManager {
 
     const isFirstTextField = textFieldsBeforeCurrent.length === 0;
 
-    // 调试信息
-    console.log(`🔍 创建文本字段: ${field.name}, 字段索引: ${fieldIndex}, 前面文本字段数: ${textFieldsBeforeCurrent.length}, 是否为第一个文本: ${isFirstTextField}`);
-
     let input;
 
     if (isFirstTextField) {
@@ -648,33 +645,26 @@ class PopupManager {
     const container = document.createElement('div');
     container.className = 'multi-select-container';
 
-    // 复选框组
-    const checkboxGroup = document.createElement('div');
-    checkboxGroup.className = 'checkbox-group';
+    // 标签展示区域（单行）
+    const tagsContainer = document.createElement('div');
+    tagsContainer.className = 'tags-container';
+    tagsContainer.dataset.fieldName = field.name;
 
     if (field.options && field.options.length > 0) {
       field.options.forEach(option => {
-        const item = document.createElement('div');
-        item.className = 'checkbox-item';
+        // 创建可点击的标签
+        const tag = document.createElement('div');
+        tag.className = 'tag-item';
+        tag.textContent = option;
+        tag.dataset.value = option;
+        tag.dataset.fieldName = field.name;
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = `checkbox_${field.name}_${option}`;
-        checkbox.value = option;
-
-        const label = document.createElement('label');
-        label.htmlFor = checkbox.id;
-        label.textContent = option;
-
-        item.appendChild(checkbox);
-        item.appendChild(label);
-        checkboxGroup.appendChild(item);
-
-        // 监听选择变化
-        checkbox.addEventListener('change', () => {
-          this.updateMultiSelectValue(field);
-          this.validateForm();
+        // 标签点击事件 - 直接在原地切换状态
+        tag.addEventListener('click', () => {
+          this.toggleTagInline(field.name, option, tag);
         });
+
+        tagsContainer.appendChild(tag);
       });
     }
 
@@ -684,23 +674,43 @@ class PopupManager {
     multiInput.className = 'field-input multi-input';
     multiInput.placeholder = `输入多个${field.name}，用逗号分隔`;
 
-    multiInput.addEventListener('blur', () => {
+    multiInput.addEventListener('input', () => {
       this.processMultiSelectInput(field, multiInput.value);
-      multiInput.value = '';
     });
 
-    multiInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.processMultiSelectInput(field, multiInput.value);
-        multiInput.value = '';
-      }
-    });
-
-    container.appendChild(checkboxGroup);
+    container.appendChild(tagsContainer);
     container.appendChild(multiInput);
 
     return container;
+  }
+
+  /**
+   * 内联切换标签选中状态
+   * @param {string} fieldName - 字段名
+   * @param {string} value - 标签值
+   * @param {HTMLElement} tagElement - 标签元素
+   */
+  toggleTagInline(fieldName, value, tagElement) {
+    // 获取或初始化选中值数组
+    if (!this.userInput[fieldName]) {
+      this.userInput[fieldName] = [];
+    }
+
+    const selectedValues = this.userInput[fieldName];
+    const selectedIndex = selectedValues.indexOf(value);
+
+    if (selectedIndex > -1) {
+      // 取消选中
+      selectedValues.splice(selectedIndex, 1);
+      tagElement.classList.remove('selected');
+    } else {
+      // 选中
+      selectedValues.push(value);
+      tagElement.classList.add('selected');
+    }
+
+    console.log(`🏷️ 标签切换: ${fieldName} "${value}", 已选中: ${selectedValues.join(', ')}`);
+    this.validateForm();
   }
 
   /**
@@ -719,64 +729,52 @@ class PopupManager {
   }
 
   /**
-   * 处理多选输入
+   * 处理多选输入（仅保存原始输入，提交时处理）
    */
   processMultiSelectInput(field, inputValue) {
     if (!inputValue.trim()) return;
 
-    const newOptions = inputValue
-      .split(',')
-      .map(option => option.trim())
-      .filter(option => option.length > 0);
+    console.log(`📝 批量输入原始值: "${inputValue}"`);
 
-    if (newOptions.length === 0) return;
+    // 保存原始输入内容，用于提交时处理
+    this.userInput[`${field.name}_rawInput`] = inputValue;
 
-    // 获取当前的复选框组
-    const checkboxGroup = this.dynamicFields.querySelector(
-      `input[type="checkbox"][id^="checkbox_${field.name}_"]`
-    )?.parentElement.parentElement;
+    console.log(`✅ 批量输入已保存: ${field.name}, 原始输入: "${inputValue}"`);
+    this.validateForm();
+  }
 
-    if (!checkboxGroup) return;
+  /**
+   * 处理多选字段提交（保留选中标签和原始输入）
+   */
+  processMultiSelectFieldsForSubmit() {
+    const processedInput = { ...this.userInput };
 
-    newOptions.forEach(newOption => {
-      // 检查是否已存在
-      const existingCheckbox = checkboxGroup.querySelector(
-        `input[value="${newOption}"]`
-      );
+    // 遍历所有字段，查找多选字段
+    this.fieldsData.multiFields.forEach(field => {
+      const rawInputKey = `${field.name}_rawInput`;
 
-      if (!existingCheckbox) {
-        // 创建新的复选框
-        const item = document.createElement('div');
-        item.className = 'checkbox-item';
+      if (processedInput[rawInputKey]) {
+        // 有原始输入，需要解析
+        const rawOptions = processedInput[rawInputKey]
+          .split(/[,，]/)
+          .map(option => option.trim())
+          .filter(option => option.length > 0);
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = `checkbox_${field.name}_${newOption}`;
-        checkbox.value = newOption;
-        checkbox.checked = true;
+        // 获取当前已选中的标签
+        const currentSelected = processedInput[field.name] || [];
 
-        const label = document.createElement('label');
-        label.htmlFor = checkbox.id;
-        label.textContent = newOption;
+        console.log(`🔄 多选字段提交: ${field.name}`);
+        console.log(`  - 已选标签: [${currentSelected.join(', ')}]`);
+        console.log(`  - 原始输入: [${rawOptions.join(', ')}]`);
+        console.log(`  - 将同时传递给后端处理`);
 
-        item.appendChild(checkbox);
-        item.appendChild(label);
-        checkboxGroup.appendChild(item);
-
-        // 监听变化
-        checkbox.addEventListener('change', () => {
-          this.updateMultiSelectValue(field);
-          this.validateForm();
-        });
-      } else {
-        // 已存在的复选框，选中它
-        existingCheckbox.checked = true;
+        // 不删除 rawInput，让后端处理合并逻辑
+        // processedInput[field.name] 保持原样（已选标签）
+        // processedInput[rawInputKey] 保持原样（原始输入）
       }
     });
 
-    // 更新字段值
-    this.updateMultiSelectValue(field);
-    this.validateForm();
+    return processedInput;
   }
 
   /**
@@ -855,10 +853,13 @@ class PopupManager {
     try {
       this.setStatus('查重中...');
 
+      // 处理多选字段的原始输入
+      const processedInput = this.processMultiSelectFieldsForSubmit();
+
       // 发送保存请求（包含查重）
       const response = await chrome.runtime.sendMessage({
         type: 'SAVE_RECORD',
-        userInput: this.userInput
+        userInput: processedInput
       });
 
       if (response.success) {
@@ -1127,7 +1128,17 @@ class PopupManager {
       const configResponse = await chrome.runtime.sendMessage({ type: 'GET_CONFIG' });
       if (configResponse.success) {
         const config = configResponse.config;
-        const { app_token, table_id } = this.parseTableUrl(config.tableUrl);
+        // 通过消息传递获取URL解析结果，避免重复实现
+        const parseResponse = await chrome.runtime.sendMessage({
+          type: 'PARSE_TABLE_URL',
+          tableUrl: config.tableUrl
+        });
+
+        if (!parseResponse.success) {
+          throw new Error('URL解析失败: ' + parseResponse.error);
+        }
+
+        const { app_token, table_id } = parseResponse.result;
 
         await chrome.runtime.sendMessage({
           type: 'CLEAR_CACHE',
@@ -1145,23 +1156,31 @@ class PopupManager {
   }
 
   /**
-   * 解析表格URL（简化版本）
+   * 刷新选项缓存（只清理单选/多选选项，保留字段列表）
    */
-  parseTableUrl(tableUrl) {
-    // 这里简化处理，实际应该与background.js中的逻辑一致
-    const url = new URL(tableUrl);
-    const pathParts = url.pathname.split('/');
-    const baseIndex = pathParts.indexOf('base');
+  async refreshOptionsCache() {
+    try {
+      // 只清除选项缓存，保留字段列表缓存
+      const configResponse = await chrome.runtime.sendMessage({ type: 'GET_CONFIG' });
+      if (configResponse.success) {
+        const config = configResponse.config;
 
-    if (baseIndex !== -1 && baseIndex + 1 < pathParts.length) {
-      return {
-        app_token: pathParts[baseIndex + 1],
-        table_id: pathParts[baseIndex + 2] || 'tbl...'
-      };
+        await chrome.runtime.sendMessage({
+          type: 'CLEAR_OPTIONS_CACHE',
+          tableUrl: config.tableUrl
+        });
+
+        // 重新加载字段（这会重新获取选项）
+        await this.loadFields();
+        this.showMessage('选项缓存已刷新', 'success');
+      }
+    } catch (error) {
+      console.error('刷新选项缓存失败:', error);
+      this.showMessage('刷新选项失败，请重试', 'error');
     }
-
-    throw new Error('无法解析表格URL');
   }
+
+  // parseTableUrl方法已移除，统一使用background.js的PARSE_TABLE_URL消息服务
 
   /**
    * 获取字段类型标签 - 已移除，不再显示字段类型
@@ -1190,7 +1209,25 @@ class PopupManager {
 // 页面加载完成后初始化（确保单例模式）
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🌟 DOM 加载完成，开始初始化 PopupManager');
-  new PopupManager();
+  const popup = new PopupManager();
+
+  // 添加全局清理方法
+  window.clearFeishuOptionsCache = async function() {
+    console.log('🔄 自动清理选项缓存...');
+    try {
+      if (popup) {
+        await popup.refreshOptionsCache();
+        console.log('✅ 选项缓存清理完成！');
+      } else {
+        console.error('❌ 未找到PopupManager实例');
+      }
+    } catch (error) {
+      console.error('❌ 清理失败:', error);
+    }
+  };
+
+  // 手动清理选项缓存功能（通过管理界面按钮触发）
+  // 取消自动清理，改为手动控制
 });
 
 // 防止重复初始化的清理函数

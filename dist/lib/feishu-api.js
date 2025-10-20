@@ -1,7 +1,7 @@
 /**
  * 飞书API封装模块
  * 负责与飞书开放平台的所有API交互
- * 包含Token管理、字段查询、记录操作等核心功能
+ * 重构版本：使用专业的TokenManager管理Token生命周期
  */
 
 /**
@@ -10,53 +10,56 @@
 class FeishuAPIClient {
   constructor() {
     this.baseUrl = 'https://open.feishu.cn/open-apis';
-    this.tokenCache = {
-      tenantAccessToken: null,
-      expireTime: 0
-    };
+    this.tokenManager = new globalThis.TokenManager.TokenManager();
   }
 
   /**
    * 获取tenant_access_token
-   * 按需获取，检查过期时间
+   * 委托给TokenManager处理，确保可靠性和原子性
    * @param {string} appId - 应用ID
    * @param {string} appSecret - 应用密钥
    * @returns {Promise<string>} - 访问令牌
    */
   async getTenantToken(appId, appSecret) {
-    const now = Date.now();
-
-    // 检查缓存中的token是否仍然有效
-    if (this.tokenCache.tenantAccessToken &&
-        this.tokenCache.expireTime > now + 60000) { // 提前1分钟刷新
-      return this.tokenCache.tenantAccessToken;
-    }
+    console.log('🔑 FeishuAPIClient: 委托TokenManager获取Token', {
+      appId: appId?.substring(0, 10) + '...',
+      timestamp: new Date().toISOString()
+    });
 
     try {
-      const response = await fetch(`${this.baseUrl}/auth/v3/tenant_access_token/internal`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          app_id: appId,
-          app_secret: appSecret
-        })
+      const token = await this.tokenManager.getValidToken(appId, appSecret);
+
+      console.log('✅ FeishuAPIClient: Token获取成功', {
+        tokenPrefix: token.substring(0, 20) + '...'
       });
 
-      const data = await response.json();
-
-      if (data.code === 0) {
-        this.tokenCache.tenantAccessToken = data.tenant_access_token;
-        this.tokenCache.expireTime = now + (data.expire - 60) * 1000; // 提前1分钟过期
-
-        return data.tenant_access_token;
-      } else {
-        throw new Error(`Token获取失败: ${data.msg}`);
-      }
+      return token;
     } catch (error) {
-      throw new Error(`获取tenant_access_token失败: ${error.message}`);
+      console.error('❌ FeishuAPIClient: Token获取失败', {
+        errorType: error.constructor.name,
+        errorMessage: error.message
+      });
+      throw error;
     }
+  }
+
+  /**
+   * 强制刷新Token（忽略缓存）
+   * @param {string} appId - 应用ID
+   * @param {string} appSecret - 应用密钥
+   * @returns {Promise<string>} - 新的访问令牌
+   */
+  async forceRefreshToken(appId, appSecret) {
+    console.log('🔄 FeishuAPIClient: 强制刷新Token');
+    return await this.tokenManager.forceRefreshToken(appId, appSecret);
+  }
+
+  /**
+   * 获取Token状态（用于调试）
+   * @returns {Promise<Object>} - Token状态信息
+   */
+  async getTokenStatus() {
+    return await this.tokenManager.getTokenStatus();
   }
 
   /**
@@ -121,6 +124,14 @@ class FeishuAPIClient {
    */
   async getTableFields(appToken, tableId, tenantToken) {
     try {
+      console.log('🚀 API调用开始 - 获取表格字段:', {
+        url: `${this.baseUrl}/bitable/v1/apps/${appToken}/tables/${tableId}/fields`,
+        appToken: appToken?.substring(0, 10) + '...',
+        tableId: tableId?.substring(0, 10) + '...',
+        tenantToken: tenantToken ? tenantToken.substring(0, 20) + '...' : '无效令牌',
+        method: 'GET'
+      });
+
       const response = await fetch(
         `${this.baseUrl}/bitable/v1/apps/${appToken}/tables/${tableId}/fields`,
         {
@@ -131,16 +142,91 @@ class FeishuAPIClient {
         }
       );
 
+      console.log('📡 字段API响应状态:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          contentType: response.headers.get('content-type'),
+          contentLength: response.headers.get('content-length'),
+          requestId: response.headers.get('x-request-id')
+        },
+        responseTime: new Date().toISOString()
+      });
+
+      // 检查Token失效 - 直接使用，失效了重新获取
+      if (response.status === 401) {
+        const tokenExpiredError = new Error('Token已过期，需要重新获取');
+        tokenExpiredError.code = 'TOKEN_EXPIRED';
+        throw tokenExpiredError;
+      }
+
       const data = await response.json();
 
+      console.log('📨 字段API完整响应:', {
+        code: data.code,
+        msg: data.msg,
+        success: data.code === 0,
+        hasData: !!data.data,
+        dataExists: !!data.data?.items,
+        itemsCount: data.data?.items?.length || 0,
+        responseTime: new Date().toISOString()
+      });
+
+      // 详细的字段数据分析
+      if (data.code === 0 && data.data?.items) {
+        console.log('🔍 字段数据分析:', {
+          totalCount: data.data.items.length,
+          sampleFields: data.data.items.slice(0, 3).map(field => ({
+            name: field.field_name,
+            type: field.type,
+            uiType: field.ui_type,
+            isPrimary: field.is_primary
+          })),
+          fieldTypes: [...new Set(data.data.items.map(f => `${f.type}(${f.ui_type})`))].slice(0, 5)
+        });
+      }
+
       if (data.code === 0) {
+        console.log('✅ 字段获取成功:', {
+          fieldsCount: data.data?.items?.length || 0,
+          sampleField: data.data?.items?.[0]?.field_name || '无字段数据'
+        });
         return data.data.items || [];
       } else {
+        console.error('❌ 字段获取失败:', {
+          code: data.code,
+          msg: data.msg,
+          help: this._getFieldErrorHelp(data.code),
+          timestamp: new Date().toISOString()
+        });
         throw new Error(`获取字段列表失败: ${data.msg}`);
       }
     } catch (error) {
+      console.error('💥 字段API调用彻底失败:', {
+        errorType: error.constructor.name,
+        errorMessage: error.message,
+        errorStack: error.stack?.split('\n')?.[0], // 只显示第一行堆栈
+        timestamp: new Date().toISOString()
+      });
       throw new Error(`API调用失败: ${error.message}`);
     }
+  }
+
+  /**
+   * 获取字段错误码的帮助信息
+   * @param {number} code - 错误码
+   * @returns {string} - 帮助信息
+   */
+  _getFieldErrorHelp(code) {
+    const errorHelp = {
+      91402: '应用权限不足，请检查飞书开放平台的应用权限配置',
+      91403: '表格权限不足，请确认应用已添加到表格协作者',
+      10003: '参数错误，请检查app_token和table_id是否正确',
+      401: '认证失败，tenant_token无效或已过期',
+      403: '无权限访问该表格',
+      404: '表格不存在或已被删除'
+    };
+    return errorHelp[code] || `未知错误码，请检查网络连接和权限配置`;
   }
 
   /**
@@ -490,7 +576,7 @@ if (typeof window !== 'undefined') {
   window.FeishuAPI = { FeishuAPIClient, feishuAPI };
 }
 
-// 在Service Worker环境中使用
-if (typeof globalThis !== 'undefined' && !globalThis.FeishuAPI) {
+// 在Service Worker环境中使用 - 确保总是可用
+if (typeof globalThis !== 'undefined') {
   globalThis.FeishuAPI = { FeishuAPIClient, feishuAPI };
 }

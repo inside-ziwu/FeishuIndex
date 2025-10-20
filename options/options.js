@@ -25,6 +25,10 @@ class OptionsManager {
     this.clearConfigBtn = document.getElementById('clearConfig');
     this.toggleSecretBtn = document.getElementById('toggleSecret');
 
+    // 缓存管理按钮
+    this.clearFieldCacheBtn = document.getElementById('clearFieldCache');
+    this.clearOptionsCacheBtn = document.getElementById('clearOptionsCache');
+
     // 结果显示
     this.testResultSection = document.getElementById('testResult');
     this.testResultContent = document.getElementById('testResultContent');
@@ -48,6 +52,10 @@ class OptionsManager {
     this.testConnectionBtn.addEventListener('click', () => this.testConnection());
     this.clearConfigBtn.addEventListener('click', () => this.clearConfig());
     this.toggleSecretBtn.addEventListener('click', () => this.toggleSecretVisibility());
+
+    // 缓存管理按钮事件
+    this.clearFieldCacheBtn.addEventListener('click', () => this.clearFieldCache());
+    this.clearOptionsCacheBtn.addEventListener('click', () => this.clearOptionsCache());
 
     // 表单提交事件
     document.querySelectorAll('form').forEach(form => {
@@ -305,13 +313,40 @@ class OptionsManager {
       this.appSecretInput.value = '';
       this.tableUrlInput.value = '';
 
-      // 清除存储的配置
-      await chrome.storage.local.remove([
+      // 清除存储的配置和所有缓存
+      // 首先获取所有存储项，找到所有相关的缓存键
+      const allStorage = await chrome.storage.local.get(null);
+      const keysToRemove = [
+        // 用户配置
         'feishu_app_id',
         'feishu_app_secret',
         'feishu_table_url',
-        'feishu_config_version'
-      ]);
+        'feishu_config_version',
+
+        // 其他状态
+        'feishu_last_save_time',
+
+        // 可观测性日志
+        'feishuindex_logs'
+      ];
+
+      // 查找所有以这些前缀开头的缓存键（带tableId后缀的）
+      const cachePrefixes = [
+        'feishu_field_cache_',
+        'feishu_field_cache_timestamp_',
+        'feishu_options_cache_',
+        'feishu_options_cache_date_'
+      ];
+
+      // 添加所有匹配的缓存键
+      Object.keys(allStorage).forEach(key => {
+        if (cachePrefixes.some(prefix => key.startsWith(prefix))) {
+          keysToRemove.push(key);
+        }
+      });
+
+      // 执行删除操作
+      await chrome.storage.local.remove(keysToRemove);
 
       // 隐藏测试结果
       this.testResultSection.classList.add('hidden');
@@ -418,6 +453,174 @@ class OptionsManager {
     this.testResultSection.classList.remove('hidden');
     this.testResultContent.innerHTML = `<div style="background: #e8f4fd; padding: 20px; border-radius: 8px;">${html}</div>`;
     this.testResultSection.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /**
+   * 清理字段缓存
+   */
+  async clearFieldCache() {
+    if (!this.tableUrlInput.value.trim()) {
+      this.showMessage('请先配置表格URL', 'warning');
+      return;
+    }
+
+    try {
+      this.showLoading('清理缓存中...');
+      this.clearFieldCacheBtn.disabled = true;
+      this.clearFieldCacheBtn.textContent = '🔄 清理中...';
+
+      const response = await chrome.runtime.sendMessage({
+        type: 'CLEAR_CACHE',
+        tableUrl: this.tableUrlInput.value.trim()
+      });
+
+      if (response.success) {
+        this.showMessage('字段缓存清理成功！正在重新获取字段信息...', 'success');
+        console.log('✅ 字段缓存清理完成');
+
+        // 强制刷新字段缓存
+        const refreshResponse = await chrome.runtime.sendMessage({
+          type: 'REFRESH_FIELDS_CACHE'
+        });
+
+        if (refreshResponse.success) {
+          this.showMessage('字段信息已更新到最新状态！', 'success');
+          console.log('✅ 字段信息强制刷新完成');
+        } else {
+          this.showMessage(`字段刷新失败: ${refreshResponse.error}`, 'warning');
+        }
+
+        // 调试：检查缓存状态
+        this.debugCacheStatus();
+      } else {
+        throw new Error(response.error || '清理失败');
+      }
+    } catch (error) {
+      console.error('清理字段缓存失败:', error);
+      this.showMessage(`清理字段缓存失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+      this.clearFieldCacheBtn.disabled = false;
+      this.clearFieldCacheBtn.textContent = '🔄 清理字段缓存';
+    }
+  }
+
+  /**
+   * 清理选项缓存
+   */
+  async clearOptionsCache() {
+    if (!this.tableUrlInput.value.trim()) {
+      this.showMessage('请先配置表格URL', 'warning');
+      return;
+    }
+
+    try {
+      this.showLoading('清理缓存中...');
+      this.clearOptionsCacheBtn.disabled = true;
+      this.clearOptionsCacheBtn.textContent = '🏷️ 清理中...';
+
+      const response = await chrome.runtime.sendMessage({
+        type: 'CLEAR_OPTIONS_CACHE',
+        tableUrl: this.tableUrlInput.value.trim()
+      });
+
+      if (response.success) {
+        this.showMessage('选项缓存清理成功！正在重新获取最新选项...', 'success');
+        console.log('✅ 选项缓存清理完成');
+
+        // 强制刷新字段缓存（包含选项）
+        const refreshResponse = await chrome.runtime.sendMessage({
+          type: 'REFRESH_FIELDS_CACHE'
+        });
+
+        if (refreshResponse.success) {
+          this.showMessage('选项信息已更新到最新状态！', 'success');
+          console.log('✅ 选项信息强制刷新完成');
+        } else {
+          this.showMessage(`选项刷新失败: ${refreshResponse.error}`, 'warning');
+        }
+
+        // 调试：检查缓存状态
+        this.debugCacheStatus();
+      } else {
+        throw new Error(response.error || '清理失败');
+      }
+    } catch (error) {
+      console.error('清理选项缓存失败:', error);
+      this.showMessage(`清理选项缓存失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+      this.clearOptionsCacheBtn.disabled = false;
+      this.clearOptionsCacheBtn.textContent = '🏷️ 清理选项缓存';
+    }
+  }
+
+  /**
+   * 调试缓存状态
+   */
+  async debugCacheStatus() {
+    try {
+      const allStorage = await new Promise((resolve) => {
+        chrome.storage.local.get(null, resolve);
+      });
+
+      console.log('=== 调试：当前所有存储数据 ===');
+      Object.entries(allStorage).forEach(([key, value]) => {
+        if (key.includes('feishu') || key.includes('cache')) {
+          console.log(`${key}:`, typeof value === 'object' ? JSON.stringify(value).substring(0, 200) + '...' : value);
+        }
+      });
+
+      // 检查表格URL解析
+      const tableUrl = this.tableUrlInput.value.trim();
+      if (tableUrl) {
+        console.log('=== 表格URL解析调试 ===');
+        console.log('原始URL:', tableUrl);
+
+        // 通过消息传递让background.js解析URL，避免重复实现
+        try {
+          const response = await chrome.runtime.sendMessage({
+            type: 'PARSE_TABLE_URL',
+            tableUrl: tableUrl
+          });
+
+          if (response.success) {
+            const { app_token, table_id } = response.result;
+            console.log('解析出的app_token:', app_token);
+            console.log('解析出的table_id:', table_id);
+
+            if (app_token && table_id) {
+              // 通过消息传递获取正确的缓存键，确保与background.js一致
+              const cacheKeyResponse = await chrome.runtime.sendMessage({
+                type: 'GET_CACHE_KEYS',
+                app_token: app_token,
+                table_id: table_id
+              });
+
+              if (cacheKeyResponse.success) {
+                const { actualTableId, fieldCacheKey, optionsCacheKey } = cacheKeyResponse.result;
+
+                console.log('实际使用的tableId:', actualTableId);
+                console.log('实际字段缓存键:', fieldCacheKey);
+                console.log('实际选项缓存键:', optionsCacheKey);
+
+                const fieldCacheExists = Object.keys(allStorage).some(key => key === fieldCacheKey);
+                const optionsCacheExists = Object.keys(allStorage).some(key => key === optionsCacheKey);
+
+                console.log('字段缓存存在:', fieldCacheExists);
+                console.log('选项缓存存在:', optionsCacheExists);
+              } else {
+                console.error('获取缓存键失败:', cacheKeyResponse.error);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('URL解析失败:', error);
+        }
+      }
+    } catch (error) {
+      console.error('调试缓存状态失败:', error);
+    }
   }
 }
 

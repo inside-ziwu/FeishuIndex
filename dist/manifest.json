@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FeishuIndex",
-  "version": "1.0.3",
+  "version": "1.0.1",
   "description": "将任意网页URL快速保存到飞书多维表格的Chrome扩展",
   "permissions": [
     "storage",

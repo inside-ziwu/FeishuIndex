@@ -8,14 +8,149 @@
  * - 错误自愈机制
  */
 
-// 导入依赖模块
+// 导入依赖模块 - 按依赖顺序加载
 try {
+  // 1. 基础工具模块
+  importScripts('../lib/cache-key-manager.js');
+  importScripts('../lib/storage.js');
+  importScripts('../lib/token-manager.js');
+
+  // 2. 业务逻辑模块（依赖基础模块）
   importScripts('../lib/field-mapper.js');
   importScripts('../lib/feishu-api.js');
-  importScripts('../lib/storage.js');
-  console.log('✅ 依赖模块加载成功');
+
+  // 3. 验证关键依赖模块完整性
+  const dependencyCheck = validateDependencies();
+  if (!dependencyCheck.success) {
+    console.error('❌ 依赖验证失败:', dependencyCheck.errors);
+    throw new Error(`关键依赖缺失: ${dependencyCheck.errors.join(', ')}`);
+  }
+
+  console.log('✅ FeishuIndex v1.0.1 - 依赖模块加载成功（正确的依赖顺序）');
+
+  // 启动时执行一次性历史缓存清理
+  migrateLegacyCache();
 } catch (error) {
-  console.error('❌ 依赖模块加载失败:', error);
+  console.error('❌ FeishuIndex v1.0.1 - 依赖模块加载失败:', error);
+}
+
+// 启动日志
+console.log('🚀 FeishuIndex v1.0.1 Service Worker 启动完成', {
+  timestamp: new Date().toISOString(),
+  userAgent: navigator.userAgent
+});
+
+/**
+ * 验证关键依赖模块的完整性
+ * @returns {Object} - 验证结果
+ */
+function validateDependencies() {
+  const requiredModules = [
+    {
+      name: 'CacheKeyManager',
+      path: 'globalThis.CacheKeyManager',
+      requiredMethods: ['CacheKeyManager']
+    },
+    {
+      name: 'Storage',
+      path: 'globalThis.Storage',
+      requiredMethods: ['StorageManager', 'storage']
+    },
+    {
+      name: 'TokenManager',
+      path: 'globalThis.TokenManager',
+      requiredMethods: ['TokenManager']
+    },
+    {
+      name: 'FieldMapper',
+      path: 'globalThis.FieldMapper',
+      requiredMethods: ['classifyFields', 'validateRequiredFields']
+    },
+    {
+      name: 'FeishuAPI',
+      path: 'globalThis.FeishuAPI',
+      requiredMethods: ['FeishuAPIClient']
+    }
+  ];
+
+  const errors = [];
+  const warnings = [];
+
+  requiredModules.forEach(module => {
+    try {
+      // 检查模块是否存在于 globalThis
+      const pathParts = module.path.split('.');
+      let obj = globalThis;
+
+      for (const part of pathParts) {
+        if (!obj[part]) {
+          errors.push(`${module.name} 模块未找到`);
+          return;
+        }
+        obj = obj[part];
+      }
+
+      // 检查必需的方法是否存在
+      module.requiredMethods.forEach(method => {
+        if (!obj[method]) {
+          errors.push(`${module.name}.${method} 方法未找到`);
+        }
+      });
+
+      // 检查是否可以实例化关键类
+      if (module.name === 'TokenManager') {
+        try {
+          new globalThis.TokenManager.TokenManager();
+        } catch (e) {
+          errors.push(`${module.name} 实例化失败: ${e.message}`);
+        }
+      }
+
+      if (module.name === 'Storage') {
+        try {
+          new globalThis.Storage.StorageManager();
+        } catch (e) {
+          errors.push(`${module.name} 实例化失败: ${e.message}`);
+        }
+      }
+
+    } catch (error) {
+      errors.push(`${module.name} 检查失败: ${error.message}`);
+    }
+  });
+
+  return {
+    success: errors.length === 0,
+    errors,
+    warnings,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * 一次性清理历史格式缓存
+ * 清理所有旧格式的缓存键，确保系统统一性
+ */
+async function migrateLegacyCache() {
+  try {
+    const allKeys = await chrome.storage.local.get(null);
+    const keysToRemove = [];
+
+    for (const key in allKeys) {
+      if (globalThis.CacheKeyManager.CacheKeyManager.isLegacyFormat(key)) {
+        keysToRemove.push(key);
+      }
+    }
+
+    if (keysToRemove.length > 0) {
+      await chrome.storage.local.remove(keysToRemove);
+      console.log(`🗑️ 缓存迁移完成，清理了 ${keysToRemove.length} 个历史格式缓存:`, keysToRemove);
+    } else {
+      console.log('✅ 无需清理历史缓存，系统已是统一格式');
+    }
+  } catch (error) {
+    console.error('❌ 历史缓存清理失败:', error);
+  }
 }
 
 /**
@@ -49,13 +184,32 @@ async function updateExistingRecord(request, sendResponse) {
     const config = configResult.config;
 
     // 3. 解析表格URL
-    const { app_token, table_id } = globalThis.FeishuAPI.feishuAPI.parseTableUrl(config.tableUrl);
+    const { app_token, table_id } = feishuAPI.parseTableUrl(config.tableUrl);
 
     // 4. 获取Token
-    const tenantToken = await globalThis.FeishuAPI.feishuAPI.getTenantToken(config.appId, config.appSecret);
+    const tenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
 
-    // 5. 获取字段信息
-    const fieldData = await getFieldsWithCache(app_token, table_id, tenantToken);
+    // 5. 获取字段信息（带Token重试机制）
+    let fieldData;
+    try {
+      const actualTableId = `${app_token}_${table_id}`;
+      fieldData = await getFieldsWithCache(app_token, table_id, actualTableId, tenantToken);
+    } catch (error) {
+      if (error.code === 'TOKEN_EXPIRED') {
+        console.log('🔄 Token失效，重新获取并重试...');
+
+        // 清除Token缓存
+        await globalThis.TokenManager.TokenManager.clearTokenCache();
+
+        // 重新获取Token
+        const newTenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
+
+        // 重试获取字段信息
+        fieldData = await getFieldsWithCache(app_token, table_id, actualTableId, newTenantToken);
+      } else {
+        throw error;
+      }
+    }
 
     // 6. 验证字段数据
     if (!fieldData || !fieldData.classifiedFields || !fieldData.classifiedFields.allSupportedFields) {
@@ -66,14 +220,14 @@ async function updateExistingRecord(request, sendResponse) {
     }
 
     // 7. 构建更新数据
-    const updateData = globalThis.FieldMapper.buildUpdateData(
+    const updateData = FieldMapper.buildUpdateData(
       {}, // 传入空对象作为现有记录，表示更新所有非空字段
       request.userInput,
       fieldData.classifiedFields
     );
 
     // 8. 执行更新
-    const result = await globalThis.FeishuAPI.feishuAPI.updateRecord(
+    const result = await feishuAPI.updateRecord(
       app_token,
       table_id,
       request.recordId,
@@ -136,16 +290,35 @@ async function saveUrlRecord(request, sendResponse) {
     config = configResult.config;
 
     // 3. 解析表格URL
-    ({ app_token, table_id } = globalThis.FeishuAPI.feishuAPI.parseTableUrl(config.tableUrl));
+    ({ app_token, table_id } = feishuAPI.parseTableUrl(config.tableUrl));
 
     // 4. 获取Token
-    const tenantToken = await globalThis.FeishuAPI.feishuAPI.getTenantToken(config.appId, config.appSecret);
+    const tenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
 
-    // 5. 获取字段信息（带缓存检查）
-    const fieldData = await getFieldsWithCache(app_token, table_id, tenantToken);
+    // 5. 获取字段信息（带缓存检查和Token重试）
+    const actualTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(app_token, table_id);
+    let fieldData;
+    try {
+      fieldData = await getFieldsWithCache(app_token, table_id, actualTableId, tenantToken);
+    } catch (error) {
+      if (error.code === 'TOKEN_EXPIRED') {
+        console.log('🔄 Token失效，重新获取并重试...');
+
+        // 清除Token缓存
+        await globalThis.TokenManager.TokenManager.clearTokenCache();
+
+        // 重新获取Token
+        const newTenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
+
+        // 重试获取字段信息
+        fieldData = await getFieldsWithCache(app_token, table_id, actualTableId, newTenantToken);
+      } else {
+        throw error;
+      }
+    }
 
     // 6. 验证必需字段
-    const validation = globalThis.FieldMapper.validateRequiredFields(fieldData.classifiedFields);
+    const validation = FieldMapper.validateRequiredFields(fieldData.classifiedFields);
     if (!validation.valid) {
       const missingLinkIssue = validation.issues.find(issue => issue.type === 'missing_required');
       if (missingLinkIssue) {
@@ -165,8 +338,8 @@ async function saveUrlRecord(request, sendResponse) {
     // 7. URL查重（除非跳过）
     let duplicateRecord = null;
     if (!request.skipDuplicationCheck) {
-      const defaultLinkField = globalThis.FieldMapper.getDefaultLinkField(fieldData.classifiedFields.linkFields);
-      duplicateRecord = await globalThis.FeishuAPI.feishuAPI.checkUrlDuplication(
+      const defaultLinkField = FieldMapper.getDefaultLinkField(fieldData.classifiedFields.linkFields);
+      duplicateRecord = await feishuAPI.checkUrlDuplication(
         app_token,
         table_id,
         defaultLinkField.name,
@@ -176,19 +349,19 @@ async function saveUrlRecord(request, sendResponse) {
     }
 
     // 8. 构建字段数据
-    const fieldsData = globalThis.FieldMapper.buildFieldsData(fieldData.classifiedFields, request.userInput);
+    const fieldsData = FieldMapper.buildFieldsData(fieldData.classifiedFields, request.userInput);
 
     // 9. 创建或更新记录
     let result;
     if (duplicateRecord) {
       // 覆盖更新
-      const updateData = globalThis.FieldMapper.buildUpdateData(
+      const updateData = FieldMapper.buildUpdateData(
         duplicateRecord.fields,
         request.userInput,
         fieldData.classifiedFields
       );
 
-      result = await globalThis.FeishuAPI.feishuAPI.updateRecord(
+      result = await feishuAPI.updateRecord(
         app_token,
         table_id,
         duplicateRecord.record_id,
@@ -200,7 +373,7 @@ async function saveUrlRecord(request, sendResponse) {
       result.duplicateRecord = duplicateRecord;
     } else {
       // 创建新记录
-      result = await globalThis.FeishuAPI.feishuAPI.createRecord(
+      result = await feishuAPI.createRecord(
         app_token,
         table_id,
         fieldsData,
@@ -250,48 +423,133 @@ async function saveUrlRecord(request, sendResponse) {
 /**
  * 获取字段信息（带缓存）
  * @param {string} appToken - 应用token
- * @param {string} tableId - 表格ID
+ * @param {string} tableId - 实际表格ID（用于API调用）
+ * @param {string} cacheKey - 缓存键（用于存储）
  * @param {string} tenantToken - 访问令牌
  * @returns {Promise<Object>} - 字段数据和分类结果
  */
-async function getFieldsWithCache(appToken, tableId, tenantToken) {
+async function getFieldsWithCache(appToken, tableId, cacheKey, tenantToken) {
+  console.log('🔍 getFieldsWithCache 输入参数:', {
+    appToken: appToken?.substring(0, 10) + '...',
+    tableId: tableId?.substring(0, 10) + '...',
+    cacheKey: cacheKey?.substring(0, 50) + '...',
+    tenantToken: tenantToken ? '有效令牌' : '无效令牌',
+    timestamp: new Date().toISOString()
+  });
+
   try {
-    // 检查是否需要刷新字段缓存
-    const shouldRefresh = await storage.shouldRefreshFieldCache(tableId);
+    // 断点1: 缓存检查
+    console.log('🔄 断点1: 开始缓存检查');
+    const shouldRefresh = await Storage.storage.shouldRefreshFieldCache(cacheKey);
+    console.log('🔄 缓存检查结果:', {
+      shouldRefresh,
+      timestamp: new Date().toISOString()
+    });
 
     if (!shouldRefresh) {
-      // 尝试从缓存获取
-      const cachedData = await storage.getFieldCache(tableId);
+      console.log('🔄 断点2: 尝试从缓存获取数据');
+      const cachedData = await Storage.storage.getFieldCache(cacheKey);
+
+      console.log('📦 缓存数据检查:', {
+        exists: !!cachedData,
+        hasFields: !!(cachedData?.fields),
+        hasClassified: !!(cachedData?.classifiedFields || cachedData?.classified),
+        fieldsCount: cachedData?.fields?.length || 0,
+        classifiedKeys: cachedData ? Object.keys(cachedData.classifiedFields || cachedData.classified || {}) : [],
+        timestamp: new Date().toISOString()
+      });
+
       if (cachedData) {
-        console.log('📦 使用缓存数据');
-        // 统一缓存数据结构，确保与API返回结构一致
-        return {
+        console.log('✅ 使用缓存数据成功:', {
+          fieldsCount: cachedData.fields?.length || 0,
+          hasLinkFields: !!(cachedData.classifiedFields?.linkFields || cachedData.classified?.linkFields),
+          hasTextFields: !!(cachedData.classifiedFields?.textFields || cachedData.classified?.textFields)
+        });
+
+        const result = {
           fields: cachedData.fields,
           classifiedFields: cachedData.classified || cachedData.classifiedFields
         };
+        console.log('📤 缓存返回结果结构:', {
+          hasFields: !!result.fields,
+          hasClassifiedFields: !!result.classifiedFields,
+          classifiedFieldsKeys: Object.keys(result.classifiedFields || {})
+        });
+        return result;
       }
     }
 
-    // 从API获取最新字段信息
+    // 断点3: API调用前验证
+    console.log('🚀 断点3: 准备调用API获取字段...', {
+      appTokenValid: !!appToken,
+      tableIdValid: !!tableId,
+      tenantTokenValid: !!tenantToken,
+      timestamp: new Date().toISOString()
+    });
+
+    // 断点4: API调用
+    console.log('🔄 断点4: 开始API调用');
     const fields = await feishuAPI.getTableFields(appToken, tableId, tenantToken);
-    console.log('🔍 API获取到的原始字段:', fields);
 
-    // 对字段进行分类
+    console.log('🔍 API获取到的原始字段:', {
+      isArray: Array.isArray(fields),
+      length: fields?.length || 0,
+      sampleField: fields?.[0] || '无数据',
+      timestamp: new Date().toISOString()
+    });
+
+    // 断点5: 字段分类
+    console.log('🔄 断点5: 开始字段分类');
     const classifiedFields = FieldMapper.classifyFields(fields);
-    console.log('🔍 分类后的字段:', classifiedFields);
 
-    // 保存到缓存
-    await storage.saveFieldCache(tableId, fields, classifiedFields);
+    console.log('🏷️ 字段分类结果:', {
+      hasLinkFields: !!(classifiedFields?.linkFields?.length),
+      hasTextFields: !!(classifiedFields?.textFields?.length),
+      hasSingleFields: !!(classifiedFields?.singleFields?.length),
+      hasMultiFields: !!(classifiedFields?.multiFields?.length),
+      totalSupported: (classifiedFields?.allSupportedFields?.length || 0),
+      timestamp: new Date().toISOString()
+    });
+
+    // 断点6: 缓存保存
+    console.log('💾 断点6: 开始保存缓存');
+    await Storage.storage.saveFieldCache(cacheKey, fields, classifiedFields);
+    console.log('✅ 缓存保存完成:', {
+      cacheKey: cacheKey?.substring(0, 50) + '...',
+      timestamp: new Date().toISOString()
+    });
 
     const result = {
       fields: fields,
       classifiedFields: classifiedFields
     };
-    console.log('🔍 getFieldsWithCache返回:', result);
+
+    console.log('🎯 getFieldsWithCache 最终返回:', {
+      hasFields: !!result.fields,
+      hasClassifiedFields: !!result.classifiedFields,
+      fieldsCount: result.fields?.length || 0,
+      classifiedFieldsStructure: Object.keys(result.classifiedFields || {}),
+      timestamp: new Date().toISOString()
+    });
+
     return result;
 
   } catch (error) {
-    console.error('获取字段信息失败:', error);
+    console.error('💥 getFieldsWithCache 失败:', {
+      errorType: error.constructor.name,
+      errorMessage: error.message,
+      errorCode: error.code,
+      errorStack: error.stack?.split('\n')?.[0], // 只显示第一行堆栈
+      errorPhase: '需要根据前面的断点日志确定失败阶段',
+      timestamp: new Date().toISOString()
+    });
+
+    // Token失效处理 - 重新抛出，让上层处理重试
+    if (error.code === 'TOKEN_EXPIRED') {
+      console.log('🔄 检测到Token失效，抛出特殊错误供上层重试');
+      throw error;
+    }
+
     throw error;
   }
 }
@@ -357,7 +615,7 @@ function mapErrorToUserMessage(errorMessage) {
  */
 async function handleConnectionTest(config) {
   try {
-    const result = await globalThis.FeishuAPI.feishuAPI.testConnection(
+    const result = await feishuAPI.testConnection(
       config.appId,
       config.appSecret,
       config.tableUrl
@@ -365,7 +623,7 @@ async function handleConnectionTest(config) {
 
     if (result.success) {
       // 缓存字段信息
-      const classifiedFields = globalThis.FieldMapper.classifyFields(result.fields);
+      const classifiedFields = FieldMapper.classifyFields(result.fields);
       await Storage.storage.saveFieldCache(
         result.appToken,
         result.tableId,
@@ -404,6 +662,9 @@ async function handleConnectionTest(config) {
  */
 async function handleGetFields(tableUrl) {
   try {
+    console.log('🔍 开始获取字段信息:', tableUrl);
+
+    // 直接使用工作版本的方式
     const config = await Storage.storage.getConfig();
 
     if (!config.appId || !config.appSecret) {
@@ -413,49 +674,15 @@ async function handleGetFields(tableUrl) {
       };
     }
 
-    const { app_token, table_id } = globalThis.FeishuAPI.feishuAPI.parseTableUrl(tableUrl);
-    const tenantToken = await globalThis.FeishuAPI.feishuAPI.getTenantToken(config.appId, config.appSecret);
-
-    const fieldData = await getFieldsWithCache(app_token, table_id, tenantToken);
-    console.log('🔍 handleGetFields中fieldData:', fieldData);
-    console.log('🔍 fieldData.classifiedFields类型:', typeof fieldData.classifiedFields);
-    console.log('🔍 fieldData.classifiedFields内容:', fieldData.classifiedFields);
-
-    return {
-      success: true,
-      fields: fieldData.classifiedFields
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: mapErrorToUserMessage(error.message)
-    };
-  }
-}
-
-/**
- * 获取字段信息处理
- * @param {string} tableUrl - 表格URL
- * @returns {Promise<Object>} - 字段信息
- */
-async function handleGetFields(tableUrl) {
-  try {
-    console.log('🔍 开始获取字段信息:', tableUrl);
-
-    // 直接使用工作版本的方式
-    const config = await storage.getConfig();
-
-    if (!config.appId || !config.appSecret) {
-      return {
-        success: false,
-        error: '请先完成飞书应用配置'
-      };
-    }
-
     const { app_token, table_id } = feishuAPI.parseTableUrl(tableUrl);
+
+    // 使用统一的缓存键管理器构建复合tableId
+    const actualTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(app_token, table_id);
+    console.log('🔧 background.js构建的tableId:', actualTableId);
+
     const tenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
 
-    const fieldData = await getFieldsWithCache(app_token, table_id, tenantToken);
+    const fieldData = await getFieldsWithCache(app_token, table_id, actualTableId, tenantToken);
 
     console.log('📊 获取到的fieldData:', fieldData);
     console.log('🔍 fieldData类型:', typeof fieldData);
@@ -526,13 +753,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case 'GET_CONFIG':
-      storage.getConfig().then(config => {
+      Storage.storage.getConfig().then(config => {
         sendResponse({ success: true, config: config });
+      }).catch(error => {
+        console.error('GET_CONFIG 错误:', error);
+        sendResponse({ success: false, error: error.message });
       });
       return true;
 
     case 'SAVE_CONFIG':
-      storage.saveConfig(request.config).then(() => {
+      Storage.storage.saveConfig(request.config).then(() => {
         sendResponse({ success: true });
       }).catch(error => {
         sendResponse({ success: false, error: error.message });
@@ -541,11 +771,175 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'CLEAR_CACHE':
       const { app_token, table_id } = feishuAPI.parseTableUrl(request.tableUrl);
-      storage.clearAllCache(`${app_token}_${table_id}`).then(() => {
+
+      // 使用新的彻底清理方法，一次性清理所有可能的缓存格式
+      Storage.storage.clearAllPossibleCaches(app_token, table_id)
+        .then(() => {
+          console.log('🗑️ 彻底清理缓存完成');
+          sendResponse({ success: true });
+        })
+        .catch(error => {
+          console.error('🚨 彻底清理缓存失败:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true;
+
+    case 'CLEAR_OPTIONS_CACHE':
+      // 只清理选项缓存，保留字段列表缓存
+      const { app_token: options_app_token, table_id: options_table_id } = feishuAPI.parseTableUrl(request.tableUrl);
+      const optionsTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(options_app_token, options_table_id);
+      Storage.storage.clearOptionsCache(optionsTableId).then(() => {
         sendResponse({ success: true });
       }).catch(error => {
         sendResponse({ success: false, error: error.message });
       });
+      return true;
+
+    case 'PARSE_TABLE_URL':
+      // 统一的URL解析服务，消除重复实现
+      try {
+        const result = feishuAPI.parseTableUrl(request.tableUrl);
+        sendResponse({ success: true, result: result });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+      return true;
+
+    case 'GET_CACHE_KEYS':
+      // 统一的缓存键生成服务，确保options.js和background.js使用相同的键
+      try {
+        const actualTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(request.app_token, request.table_id);
+        const fieldCacheKey = globalThis.CacheKeyManager.CacheKeyManager.getFieldCacheKey(actualTableId);
+        const optionsCacheKey = globalThis.CacheKeyManager.CacheKeyManager.getOptionsCacheKey(actualTableId);
+
+        sendResponse({
+          success: true,
+          result: {
+            actualTableId,
+            fieldCacheKey,
+            optionsCacheKey
+          }
+        });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+      return true;
+
+    case 'REFRESH_FIELDS_CACHE':
+      // 强制刷新字段缓存处理器
+      (async () => {
+        try {
+          // 1. 获取配置
+          const config = await Storage.storage.getConfig();
+          if (!config.appId || !config.appSecret || !config.tableUrl) {
+            return sendResponse({
+              success: false,
+              error: '配置不完整，无法刷新字段缓存'
+            });
+          }
+
+          // 2. 解析表格URL
+          const { app_token, table_id } = feishuAPI.parseTableUrl(config.tableUrl);
+          const actualTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(app_token, table_id);
+
+          // 3. 清除现有缓存
+          await Storage.storage.clearFieldCache(actualTableId);
+
+          // 4. 重新获取Token（使用新的TokenManager）
+          const tenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
+
+          // 5. 重新获取字段并缓存
+          const fields = await feishuAPI.getTableFields(app_token, table_id, tenantToken);
+          const classifiedFields = FieldMapper.classifyFields(fields);
+          await Storage.storage.saveFieldCache(actualTableId, fields, classifiedFields);
+
+          sendResponse({
+            success: true,
+            message: '字段缓存刷新成功',
+            fieldsCount: fields.length,
+            classifiedFields: classifiedFields
+          });
+
+        } catch (error) {
+          console.error('REFRESH_FIELDS_CACHE 失败:', error);
+          sendResponse({
+            success: false,
+            error: `刷新字段缓存失败: ${error.message}`
+          });
+        }
+      })();
+      return true; // 保持消息通道开放以支持异步操作
+
+    case 'CLEAR_TOKEN_CACHE':
+      // 清理Token缓存处理器
+      (async () => {
+        try {
+          const tokenManager = new globalThis.TokenManager.TokenManager();
+          await tokenManager.clearTokenCache();
+          console.log('🗑️ Token缓存清理完成');
+          sendResponse({
+            success: true,
+            message: 'Token缓存清理成功'
+          });
+        } catch (error) {
+          console.error('清理Token缓存失败:', error);
+          sendResponse({
+            success: false,
+            error: `清理Token缓存失败: ${error.message}`
+          });
+        }
+      })();
+      return true;
+
+    case 'GET_TOKEN_STATUS':
+      // 获取Token状态处理器
+      (async () => {
+        try {
+          const tokenManager = new globalThis.TokenManager.TokenManager();
+          const status = await tokenManager.getTokenStatus();
+          sendResponse({
+            success: true,
+            status: status
+          });
+        } catch (error) {
+          console.error('获取Token状态失败:', error);
+          sendResponse({
+            success: false,
+            error: `获取Token状态失败: ${error.message}`
+          });
+        }
+      })();
+      return true;
+
+    case 'FORCE_REFRESH_TOKEN':
+      // 强制刷新Token处理器
+      (async () => {
+        try {
+          const config = await Storage.storage.getConfig();
+          if (!config.appId || !config.appSecret) {
+            return sendResponse({
+              success: false,
+              error: '配置不完整，无法刷新Token'
+            });
+          }
+
+          const tokenManager = new globalThis.TokenManager.TokenManager();
+          const newToken = await tokenManager.forceRefreshToken(config.appId, config.appSecret);
+
+          console.log('✅ Token强制刷新成功');
+          sendResponse({
+            success: true,
+            message: 'Token刷新成功',
+            tokenPrefix: newToken.substring(0, 20) + '...'
+          });
+        } catch (error) {
+          console.error('强制刷新Token失败:', error);
+          sendResponse({
+            success: false,
+            error: `强制刷新Token失败: ${error.message}`
+          });
+        }
+      })();
       return true;
 
     default:

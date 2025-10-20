@@ -513,6 +513,87 @@ body {
   }
 }
 
+/* 缓存管理样式 */
+.cache-section {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e9ecef;
+}
+
+.cache-section h2 {
+  color: #495057;
+  margin-bottom: 20px;
+  font-size: 1.3em;
+  border-bottom: 2px solid #f1f3f4;
+  padding-bottom: 10px;
+}
+
+.cache-buttons {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.cache-buttons .btn {
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #ff9500 0%, #ff7043 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff7043 0%, #ff5722 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+}
+
+.btn-warning:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.cache-section .help-text {
+  background: #f8f9fa;
+  border-left: 4px solid #ff9500;
+  padding: 15px;
+  border-radius: 6px;
+  margin-top: 15px;
+}
+
+.cache-section .help-text p {
+  margin-bottom: 8px;
+  font-size: 0.9em;
+  color: #495057;
+}
+
+.cache-section .help-text p:last-child {
+  margin-bottom: 0;
+}
+
+.cache-section .help-text strong {
+  color: #ff9500;
+  font-weight: 600;
+}
+
 @media (max-width: 480px) {
   .container {
     padding: 10px;
@@ -520,6 +601,19 @@ body {
 
   .config-section {
     padding: 15px;
+  }
+
+  .cache-section {
+    padding: 20px;
+  }
+
+  .cache-buttons {
+    flex-direction: column;
+  }
+
+  .cache-buttons .btn {
+    min-width: auto;
+    width: 100%;
   }
 
   .help-section,

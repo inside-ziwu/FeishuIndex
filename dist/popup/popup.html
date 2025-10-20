@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>飞书URL保存器</title>
-  <link rel="stylesheet" href="popup.css?v=1.0.3">
+  <link rel="stylesheet" href="popup.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -97,10 +97,12 @@
   <!-- 消息提示 -->
   <div id="messageContainer" class="message-container"></div>
 
-  <!-- 核心库文件 -->
+  <!-- 核心库文件 - 按依赖顺序加载 -->
+  <script src="../lib/cache-key-manager.js"></script>
+  <script src="../lib/storage.js"></script>
+  <script src="../lib/token-manager.js"></script>
   <script src="../lib/field-mapper.js"></script>
   <script src="../lib/feishu-api.js"></script>
-  <script src="../lib/storage.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
