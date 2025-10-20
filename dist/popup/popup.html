@@ -3,19 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FeishuIndex</title>
+  <title>飞书URL保存器</title>
   <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-  <div class="container">
-    <!-- 头部 -->
+  <div class="app-container">
+    <!-- Header导航栏 -->
     <header class="header">
-      <h1>📋 FeishuIndex</h1>
-      <div class="page-info">
-        <div class="page-title" id="pageTitle">加载中...</div>
-        <div class="page-url" id="pageUrl">获取中...</div>
+      <div class="header-left">
+        <img src="../icons/icon48.png" alt="飞书图标" class="icon">
+        <h1>飞书URL保存器</h1>
       </div>
+      <button id="openOptionsBtn" class="settings-btn">
+        <i class="fas fa-cog"></i>
+      </button>
     </header>
+
+    <!-- 状态提示条 -->
+    <div class="status-bar">
+      <span class="status-dot"></span>
+      <span class="status-text" id="statusText">已配置，可以使用</span>
+    </div>
 
     <!-- 主内容区 -->
     <main class="main" id="mainContent">
@@ -47,28 +56,21 @@
           <!-- 动态字段将在这里渲染 -->
           <div id="dynamicFields"></div>
 
-          <!-- 底部操作区 -->
-          <div class="form-actions">
-            <button type="submit" id="saveBtn" class="btn btn-primary" disabled>
-              <span class="btn-text">💾 保存记录</span>
-              <span class="btn-loading hidden">
-                <span class="btn-spinner"></span>
-                保存中...
-              </span>
-            </button>
-            <button type="button" id="resetBtn" class="btn btn-secondary">🔄 重置</button>
-          </div>
+          <!-- 保存按钮 -->
+          <button type="submit" id="saveBtn" class="save-btn" disabled>
+            <span class="btn-text">保存到飞书</span>
+            <span class="btn-loading hidden">
+              <span class="btn-spinner"></span>
+              保存中...
+            </span>
+          </button>
         </form>
       </div>
     </main>
 
-    <!-- 底部信息 -->
-    <footer class="footer">
-      <div class="status-info">
-        <span id="statusText">就绪</span>
-        <span id="fieldCount" class="field-count"></span>
-      </div>
-      <button id="openOptionsBtn" class="options-btn">⚙️</button>
+    <!-- 底部状态栏 -->
+    <footer class="bottom-status">
+      <span id="statusIndicator">状态: 就绪</span>
     </footer>
   </div>
 

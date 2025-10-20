@@ -34,15 +34,15 @@ class PopupManager {
     this.fieldErrorState = document.getElementById('fieldErrorState');
     this.formContent = document.getElementById('formContent');
 
-    // 页面信息
-    this.pageTitle = document.getElementById('pageTitle');
-    this.pageUrl = document.getElementById('pageUrl');
+    // 页面信息已在新设计中移除
+    // this.pageTitle = document.getElementById('pageTitle');
+    // this.pageUrl = document.getElementById('pageUrl');
 
     // 表单元素
     this.dynamicFields = document.getElementById('dynamicFields');
     this.saveForm = document.getElementById('saveForm');
     this.saveBtn = document.getElementById('saveBtn');
-    this.resetBtn = document.getElementById('resetBtn');
+    // resetBtn 已在新设计中移除
 
     // 按钮
     this.openConfigBtn = document.getElementById('openConfigBtn');
@@ -60,7 +60,11 @@ class PopupManager {
 
     // 状态信息
     this.statusText = document.getElementById('statusText');
-    this.fieldCount = document.getElementById('fieldCount');
+    // fieldCount 已在新设计中移除
+
+    // 新增元素引用
+    this.statusIndicator = document.getElementById('statusIndicator');
+    this.statusDot = document.querySelector('.status-dot');
   }
 
   /**
@@ -69,7 +73,7 @@ class PopupManager {
   bindEvents() {
     // 表单事件
     this.saveForm.addEventListener('submit', (e) => this.handleSubmit(e));
-    this.resetBtn.addEventListener('click', () => this.resetForm());
+    // resetBtn 已在新设计中移除
 
     // 按钮事件
     this.openConfigBtn.addEventListener('click', () => this.openConfig());
@@ -137,8 +141,8 @@ class PopupManager {
         this.currentUrl = tab.url;
         this.currentTitle = tab.title;
 
-        this.pageTitle.textContent = this.truncateText(this.currentTitle, 50);
-        this.pageUrl.textContent = this.truncateText(this.currentUrl, 60);
+        // pageTitle 已在新设计中移除
+        // this.pageTitle.textContent = this.truncateText(this.currentTitle, 50);
       }
     } catch (error) {
       console.error('获取页面信息失败:', error);
@@ -355,7 +359,6 @@ class PopupManager {
         ${field.name}
         ${field.required ? '<span class="required-indicator">*</span>' : ''}
       </div>
-      <div class="field-type ${field.type}">${this.getFieldTypeLabel(field.type)}</div>
     `;
 
     // 创建输入控件
@@ -763,7 +766,7 @@ class PopupManager {
           // 创建成功
           this.showMessage('记录保存成功', 'success');
           this.setStatus('保存成功');
-          this.resetForm();
+          // resetForm() 已在新设计中移除
         }
       } else {
         // 保存失败
@@ -841,7 +844,7 @@ class PopupManager {
       if (response.success) {
         this.showMessage('记录更新成功', 'success');
         this.setStatus('更新成功');
-        this.resetForm();
+        // resetForm() 已在新设计中移除
       } else {
         this.showMessage(response.error, 'error');
         this.setStatus('更新失败');
@@ -863,8 +866,9 @@ class PopupManager {
   }
 
   /**
-   * 重置表单
+   * 重置表单 - 已在新设计中移除
    */
+  /*
   resetForm() {
     this.initializeUserInput();
 
@@ -882,6 +886,7 @@ class PopupManager {
     this.validateForm();
     this.setStatus('就绪');
   }
+  */
 
   /**
    * 设置提交状态
@@ -948,6 +953,10 @@ class PopupManager {
    */
   setStatus(text) {
     this.statusText.textContent = text;
+    // 同时更新底部状态指示器
+    if (this.statusIndicator) {
+      this.statusIndicator.textContent = `状态: ${text}`;
+    }
   }
 
   /**
@@ -963,8 +972,7 @@ class PopupManager {
         statusText += ` (${unsupportedCount} 个不支持)`;
       }
 
-      this.fieldCount.textContent = statusText;
-      this.fieldCount.style.display = 'inline-block';
+      // fieldCount 已在新设计中移除，不再显示字段计数
     }
   }
 
@@ -1057,8 +1065,9 @@ class PopupManager {
   }
 
   /**
-   * 获取字段类型标签
+   * 获取字段类型标签 - 已移除，不再显示字段类型
    */
+  /*
   getFieldTypeLabel(type) {
     const labels = {
       'link': '链接',
@@ -1068,6 +1077,7 @@ class PopupManager {
     };
     return labels[type] || type;
   }
+  */
 
   /**
    * 截断文本
