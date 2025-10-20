@@ -62,8 +62,7 @@ class PopupManager {
     this.statusText = document.getElementById('statusText');
     // fieldCount 已在新设计中移除
 
-    // 新增元素引用
-    this.statusIndicator = document.getElementById('statusIndicator');
+    // 状态元素引用（现在只在底部显示）
     this.statusDot = document.querySelector('.status-dot');
   }
 
@@ -956,10 +955,6 @@ class PopupManager {
    */
   setStatus(text) {
     this.statusText.textContent = text;
-    // 同时更新底部状态指示器
-    if (this.statusIndicator) {
-      this.statusIndicator.textContent = `状态: ${text}`;
-    }
   }
 
   /**
