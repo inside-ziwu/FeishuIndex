@@ -234,6 +234,12 @@ body {
   transform: scale(0.95);
 }
 
+/* 单行文本输入框 */
+.text-input {
+  height: 44px;
+  font-family: inherit;
+}
+
 /* 文本域 */
 .textarea {
   min-height: 80px;

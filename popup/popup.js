@@ -367,7 +367,7 @@ class PopupManager {
     const inputContainer = document.createElement('div');
     inputContainer.className = 'field-input-container';
 
-    const inputElement = this.createInputElement(field);
+    const inputElement = this.createInputElement(field, index);
     inputContainer.appendChild(inputElement);
 
     group.appendChild(label);
@@ -379,12 +379,12 @@ class PopupManager {
   /**
    * 创建输入元素
    */
-  createInputElement(field) {
+  createInputElement(field, index) {
     switch (field.type) {
       case 'link':
         return this.createUrlInput(field);
       case 'text':
-        return this.createTextInput(field);
+        return this.createTextInput(field, index);
       case 'single':
         return this.createSingleSelectInput(field);
       case 'multi':
@@ -430,12 +430,29 @@ class PopupManager {
   /**
    * 创建文本输入框
    */
-  createTextInput(field) {
-    const input = document.createElement('textarea');
-    input.className = 'field-input textarea';
-    input.name = field.name;
-    input.placeholder = `请输入${field.name}`;
-    input.rows = 3;
+  createTextInput(field, fieldIndex) {
+    // 找出当前字段在所有文本字段中的顺序
+    const textFieldsBeforeCurrent = this.fieldsData.allSupportedFields
+      .slice(0, fieldIndex)
+      .filter(f => f.type === 'text');
+
+    const isFirstTextField = textFieldsBeforeCurrent.length === 0;
+
+    let input;
+
+    if (isFirstTextField) {
+      // 第一个文本字段使用单行输入框
+      input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'field-input text-input';
+      input.placeholder = `请输入${field.name}`;
+    } else {
+      // 其他文本字段使用多行文本框
+      input = document.createElement('textarea');
+      input.className = 'field-input textarea';
+      input.placeholder = `请输入${field.name}`;
+      input.rows = 3;
+    }
 
     // 监听输入变化
     input.addEventListener('input', (e) => {
