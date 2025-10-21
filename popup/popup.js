@@ -1191,12 +1191,8 @@ class PopupManager {
     // 🔥 关键修复：保存要更新的记录ID
     this.pendingUpdateRecordId = response.duplicateRecord.record_id;
 
-    // 显示重复记录信息
-    duplicateInfo.innerHTML = `
-      <p><strong>已存在记录:</strong></p>
-      <p>URL: ${this.truncateText(this.userInput.url, 50)}</p>
-      <p>记录ID: ${response.duplicateRecord.record_id}</p>
-    `;
+    // 完全隐藏重复记录信息容器
+    duplicateInfo.style.display = 'none';
 
     // 显示将要更新的字段
     const updateFields = [];

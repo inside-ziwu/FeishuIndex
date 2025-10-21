@@ -726,7 +726,7 @@ select.field-input {
   padding: 12px 20px;
   border: none;
   border-radius: 6px;
-  font-size: 0.95em;
+  font-size: 14px; /* 统一为14px */
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -874,22 +874,19 @@ select.field-input {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 20px 0;
+  padding: 20px 20px 4px; /* 底部间距改为4px */
 }
 
 .confirm-header h3 {
   color: #495057;
-  font-size: 1.2em;
+  font-size: 16px; /* 标题16px */
+  font-weight: bold; /* 加粗 */
+  margin: 0;
+  padding: 0;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  cursor: pointer;
-  color: #adb5bd;
-  padding: 4px;
-  line-height: 1;
+  display: none; /* 隐藏关闭按钮，因为有取消按钮 */
 }
 
 .close-btn:hover {
@@ -897,7 +894,16 @@ select.field-input {
 }
 
 .confirm-body {
-  padding: 0 20px 20px;
+  padding: 0 20px 16px; /* 统一底部间距为16px */
+}
+
+/* 弹窗主提示文字样式 */
+.confirm-body p {
+  margin: 0 0 12px 0; /* 间距改为12px */
+  font-size: 14px; /* 内容文字14px */
+  font-weight: normal; /* 不加粗 */
+  line-height: 1.4; /* 增加行高，防止换行 */
+  word-wrap: break-word; /* 允许长单词换行 */
 }
 
 .duplicate-info {
@@ -909,19 +915,21 @@ select.field-input {
 }
 
 .update-preview {
-  margin-top: 16px;
+  margin-top: 16px; /* 保持16px间距 */
 }
 
 .update-preview h4 {
   color: #495057;
-  font-size: 1em;
-  margin-bottom: 8px;
+  font-size: 16px; /* 标题行16px */
+  font-weight: bold; /* 加粗 */
+  margin-bottom: 4px; /* 间距改为4px */
 }
 
 .update-preview ul {
   margin-left: 20px;
   color: #6c757d;
-  font-size: 0.9em;
+  font-size: 14px; /* 内容文字14px */
+  font-weight: normal; /* 不加粗 */
 }
 
 .confirm-actions {
@@ -954,7 +962,7 @@ select.field-input {
   border-left: 4px solid #667eea;
   min-width: 250px;
   max-width: 300px;
-  font-size: 0.9em;
+  font-size: 14px; /* 统一为14px */
   animation: slideInRight 0.3s ease-out;
 }
 
