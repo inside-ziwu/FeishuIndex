@@ -19,6 +19,9 @@ class PopupManager {
     this.isSubmitting = false;
     this.isInitialized = false;
 
+    // 立即强制设置popup尺寸，防止Chrome自动收缩
+    this.forcePopupSize();
+
     this.initElements();
     this.bindEvents();
     this.init();
@@ -80,6 +83,9 @@ class PopupManager {
     this.openConfigBtn.addEventListener('click', () => this.openConfig());
     this.refreshFieldsBtn.addEventListener('click', () => this.refreshFields());
     this.openOptionsBtn.addEventListener('click', () => this.openOptions());
+
+    // 🔥 关键修复：保存按钮独立点击事件（因为按钮在表单外部）
+    this.saveBtn.addEventListener('click', (e) => this.handleSubmit(e));
 
     // 确认对话框事件
     this.confirmUpdateBtn.addEventListener('click', () => this.confirmUpdate());
@@ -818,6 +824,101 @@ class PopupManager {
   }
 
   /**
+   * 强制设置popup尺寸为精确的320px宽度
+   * 这是解决Chrome自动收缩popup尺寸问题的关键方法
+   */
+  forcePopupSize() {
+    try {
+      // 1. 设置html元素尺寸 - 这是Chrome计算popup尺寸的基础
+      document.documentElement.style.width = '440px';
+      document.documentElement.style.minWidth = '440px';
+      document.documentElement.style.maxWidth = '440px';
+      document.documentElement.style.display = 'block';
+      document.documentElement.style.overflow = 'visible';
+
+      // 2. 设置body元素尺寸 - 确保内容撑开popup
+      document.body.style.width = '440px';
+      document.body.style.minWidth = '440px';
+      document.body.style.maxWidth = '440px';
+      document.body.style.margin = '0';
+      document.body.style.padding = '0'; // 🔥 关键修复：移除padding，让CSS控制布局
+      document.body.style.boxSizing = 'border-box';
+      document.body.style.position = 'relative';
+
+      // 3. 设置app-container的精确尺寸 - 主要内容容器
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer) {
+        // app-container直接使用440px，内部padding处理间距
+        appContainer.style.width = '440px';
+        appContainer.style.minWidth = '440px';
+        appContainer.style.maxWidth = '440px';
+        appContainer.style.margin = '0';
+        appContainer.style.boxSizing = 'border-box';
+      }
+
+      // 4. 创建一个不可见的强制宽度元素
+      // 这是为了"欺骗"Chrome的自动尺寸计算算法
+      if (!document.querySelector('.size-enforcer')) {
+        const sizeEnforcer = document.createElement('div');
+        sizeEnforcer.className = 'size-enforcer';
+        sizeEnforcer.style.cssText = `
+          position: absolute;
+          width: 440px;  // 🔥 关键修复：修正为正确的440px
+          height: 1px;
+          visibility: hidden;
+          pointer-events: none;
+          z-index: -9999;
+        `;
+        document.body.appendChild(sizeEnforcer);
+      }
+
+      // 5. 延迟再次强制设置，确保在Chrome计算尺寸后生效
+      // 使用非递归的方式，避免无限循环
+      setTimeout(() => {
+        this.reinforcePopupSize();
+        // 调试信息：输出实际尺寸
+        console.log('Popup尺寸强制设置完成:', {
+          documentElement: document.documentElement.offsetWidth,
+          body: document.body.offsetWidth,
+          appContainer: appContainer ? appContainer.offsetWidth : 'not found',
+          target: 440
+        });
+      }, 100);
+
+    } catch (error) {
+      console.warn('强制设置popup尺寸时出错:', error);
+    }
+  }
+
+  /**
+   * 强化popup尺寸设置 - 非递归版本
+   */
+  reinforcePopupSize() {
+    try {
+      // 再次确认关键元素的尺寸
+      document.body.style.width = '440px';
+      document.body.style.minWidth = '440px';
+
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer) {
+        appContainer.style.width = '440px'; // 直接使用440px
+        appContainer.style.minWidth = '440px';
+      }
+
+      // 最后的强化措施
+      setTimeout(() => {
+        if (document.body.offsetWidth !== 440) {
+          console.warn(`Popup实际宽度异常: ${document.body.offsetWidth}px，尝试强制修正`);
+          document.body.style.width = '440px !important';
+        }
+      }, 50);
+
+    } catch (error) {
+      console.warn('强化popup尺寸时出错:', error);
+    }
+  }
+
+  /**
    * 创建多选输入框
    */
   createMultiSelectInput(field) {
@@ -1452,6 +1553,14 @@ class PopupManager {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🌟 DOM 加载完成，开始初始化 PopupManager');
   const popup = new PopupManager();
+
+  // 确保popup尺寸的最后一次强化设置
+  setTimeout(() => {
+    if (popup && popup.forcePopupSize) {
+      popup.forcePopupSize();
+      console.log('🔧 DOM加载完成后的最终尺寸强化');
+    }
+  }, 200);
 
   // 添加全局清理方法
   window.clearFeishuOptionsCache = async function() {

@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="app-container">
-    <!-- Header导航栏 -->
+    <!-- 固定顶部导航栏 -->
     <header class="header">
       <div class="header-left">
         <img src="../icons/icon48.png" alt="飞书图标" class="icon">
@@ -20,9 +20,8 @@
       </button>
     </header>
 
-    
-    <!-- 主内容区 -->
-    <main class="main" id="mainContent">
+    <!-- 可滚动内容区域 -->
+    <main class="main-content" id="mainContent">
       <!-- 加载状态 -->
       <div id="loadingState" class="loading-state">
         <div class="loading-spinner"></div>
@@ -51,31 +50,34 @@
           <!-- 动态字段将在这里渲染 -->
           <div id="dynamicFields"></div>
 
-          <!-- 底部操作区 -->
-          <div class="form-actions">
-            <!-- 保存按钮 -->
-            <button type="submit" id="saveBtn" class="save-btn" disabled>
-              <span class="btn-text">保存到飞书</span>
-              <span class="btn-loading hidden">
-                <span class="btn-spinner"></span>
-                保存中...
-              </span>
-            </button>
-
-            <!-- 状态信息 -->
-            <div class="form-status">
-              <div class="status-left">
-                <span class="status-dot"></span>
-                <span class="status-text" id="statusText">已配置，可以使用</span>
-              </div>
-              <div class="status-right">
-                <span class="error-text" id="errorText"></span>
-              </div>
-            </div>
-          </div>
         </form>
       </div>
     </main>
+
+    <!-- 固定底部操作栏 -->
+    <footer class="footer">
+      <div class="footer-content">
+        <!-- 保存按钮 -->
+        <button type="button" id="saveBtn" class="save-btn" disabled>
+          <span class="btn-text">保存到飞书</span>
+          <span class="btn-loading hidden">
+            <span class="btn-spinner"></span>
+            保存中...
+          </span>
+        </button>
+
+        <!-- 状态信息 -->
+        <div class="form-status">
+          <div class="status-left">
+            <span class="status-dot"></span>
+            <span class="status-text" id="statusText">已配置，可以使用</span>
+          </div>
+          <div class="status-right">
+            <span class="error-text" id="errorText"></span>
+          </div>
+        </div>
+      </div>
+    </footer>
   </div>
 
   <!-- 覆盖确认弹窗 -->

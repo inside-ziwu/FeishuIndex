@@ -10,41 +10,68 @@
   box-sizing: border-box;
 }
 
+/* 确保html和body都有正确的初始尺寸 */
+html {
+  width: 440px;
+  min-width: 440px;
+  max-width: 440px;
+  /* 关键修复：强制Chrome使用指定尺寸而不是内容尺寸 */
+  display: block !important;
+  overflow: visible !important;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   background-color: #f9fafb;
-  padding: 20px;
-  width: 400px;
-  max-width: 400px;
-  min-width: 350px;
-  max-height: 600px;
-  overflow: hidden;
+  padding: 0; /* 移除body的padding，交给容器处理 */
+  /* 核心修复：目标440px宽度 - 优化用户体验 */
+  width: 440px !important;
+  min-width: 440px !important;
+  max-width: 440px !important;
+  /* 强制指定渲染尺寸，防止Chrome自动调整 */
+  box-sizing: border-box !important;
+  /* 关键修复：移除body的高度限制，让容器控制布局 */
+  margin: 0;
+  /* 防止Chrome的自动尺寸调整覆盖我们的设置 */
+  position: relative !important;
 }
 
-/* 应用容器 */
+/* 应用容器 - 固定尺寸布局 */
 .app-container {
-  max-width: 400px;
-  margin: 0 auto;
+  margin: 0;
   background-color: white;
-  border-radius: 12px;
+  border-radius: 0; /* 移除圆角，使用矩形 */
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  max-height: 600px;
-  min-height: 500px;
+  /* 关键：固定尺寸，440x600px */
+  width: 440px !important;
+  height: 600px !important;
+  max-width: 440px !important;
+  max-height: 600px !important;
+  min-width: 440px !important;
+  min-height: 600px !important;
+  box-sizing: border-box !important;
+  /* 为固定定位子元素提供定位上下文 */
+  position: relative;
 }
 
-/* Header导航栏 */
+/* 固定顶部导航栏 - 浮动在容器上方 */
 .header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   background-color: #2563eb;
   color: white;
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
+  /* 关键：固定头部，浮动在上方 */
+  z-index: 10;
+  height: 48px; /* 固定头部高度 */
+  border-radius: 0; /* 明确设置无圆角 */
+  box-sizing: border-box;
 }
 
 .header-left {
@@ -85,22 +112,69 @@ body {
   font-size: 14px;
 }
 
-/* 主内容区 */
-.main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
+/* 可滚动内容区域 - 避开固定头部和底部 */
+.main-content {
+  position: absolute;
+  top: 48px; /* 头部高度 */
+  bottom: 80px; /* 调整回80px，适配重新规划的底部高度 */
+  left: 0;
+  right: 0;
+  overflow-y: auto; /* 仅在此区域滚动 */
   background-color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  /* 关键：留出头部和底部的空间 */
+  padding: 12px 16px;
+  box-sizing: border-box;
+  /* 优化滚动条体验 */
+  scrollbar-gutter: stable;
 }
 
-/* 加载状态 */
+/* 内容区域滚动条样式 */
+.main-content:not(:hover)::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.main-content:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* 添加平滑滚动 */
+.main-content {
+  scroll-behavior: smooth;
+}
+
+/* 确保滚动区域正确计算 */
+.main-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 加载状态 - 充分利用440px宽度 */
 .loading-state {
-  text-align: center;
-  padding: 40px 20px;
+  /* 关键修复：移除text-align，让flexbox控制布局 */
+  padding: 40px 16px; /* 优化padding，充分利用宽度 */
   color: #6c757d;
+  /* 确保加载状态充分利用440px宽度 */
+  width: 100%;
+  min-height: 280px; /* 优化高度，适配新的padding */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .loading-spinner {
@@ -118,11 +192,19 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-/* 错误状态 */
+/* 错误状态 - 充分利用440px宽度 */
 .error-state {
-  text-align: center;
-  padding: 40px 20px;
+  /* 关键修复：移除text-align，让flexbox控制布局 */
+  padding: 40px 16px; /* 优化padding，充分利用宽度 */
   color: #6c757d;
+  /* 确保错误状态充分利用440px宽度 */
+  width: 100%;
+  min-height: 280px; /* 优化高度，适配新的padding */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .error-icon {
@@ -147,16 +229,41 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* 关键修复：移除 justify-content: center，让表单从顶部开始 */
+  min-height: 0; /* 确保可以正确滚动 */
 }
 
-/* 表单容器 */
+/* 固定底部操作栏 - 浮动在容器上方 */
+.footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  /* 关键：固定底部，浮动在上方 */
+  z-index: 10;
+  height: 80px; /* 重新规划高度，适配新的精致按钮尺寸 */
+  box-sizing: border-box;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 表单容器 - 移除边框和阴影，融入整体布局 */
 #saveForm {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  /* 适配440px宽度：利用所有可用空间 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -164,9 +271,11 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* 动态字段样式 */
+/* 动态字段样式 - 充分利用440px宽度 */
 .field-group {
-  margin-bottom: 16px;
+  margin-bottom: 12px; /* 调整字段间距为12px */
+  /* 确保字段组占据容器全部宽度 */
+  width: 100%;
 }
 
 .field-label {
@@ -175,6 +284,7 @@ body {
   margin-bottom: 6px;
   font-weight: 500;
   color: #374151;
+  font-size: 14px; /* 调整为14px */
   min-height: 20px;
 }
 
@@ -191,15 +301,16 @@ body {
   font-weight: 700;
 }
 
-/* 输入控件样式 */
+/* 输入控件样式 - 充分利用440px宽度 */
 .field-input {
-  width: 100%;
-  padding: 10px;
+  width: 100%; /* 确保输入框占据全部可用宽度 */
+  padding: 10px 12px; /* 优化内边距，更好地利用宽度 */
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
   transition: all 0.2s ease;
   background-color: #fff;
+  box-sizing: border-box; /* 确保边框不影响宽度计算 */
 }
 
 .field-input:focus {
@@ -253,11 +364,13 @@ body {
   font-family: inherit;
 }
 
-/* 文本域 */
+/* 文本域 - 充分利用440px宽度 */
 .textarea {
-  min-height: 80px;
+  min-height: 50px; /* 调整最小高度为50px */
   resize: vertical;
   font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* 选择器 */
@@ -265,38 +378,48 @@ select.field-input {
   cursor: pointer;
 }
 
-/* 多选容器 */
+/* 多选容器 - 充分利用440px宽度 */
 .multi-select-container {
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  padding: 8px;
+  padding: 10px 12px; /* 优化内边距，更好地利用宽度 */
   background: white;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* 标签容器（单行显示） */
+/* 标签容器（充分利用440px宽度） */
 .tags-container {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
-  min-height: 36px;
-  align-items: center;
+  margin-bottom: 16px; /* 增加间距，适配更宽布局 */
+  min-height: auto; /* 移除固定最小高度，让内容决定高度 */
+  align-items: flex-start; /* 改为顶部对齐，确保高度一致 */
+  width: 100%;
 }
 
-/* 标签项 - 按钮样式 */
+/* 标签项 - 适配440px宽度的样式 */
 .tag-item {
   display: inline-block;
-  padding: 6px 12px;
+  padding: 6px 12px; /* 减小内边距，更精致 */
   background: white;
   border: 1px solid #d1d5db;
-  border-radius: 16px;
-  font-size: 13px;
+  border-radius: 16px; /* 稍微减小圆角 */
+  font-size: 14px; /* 调整为14px，与选项完全一致 */
   color: #495057;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
   white-space: nowrap;
   font-weight: 500;
+  height: 32px; /* 统一高度为32px */
+  line-height: 20px; /* 调整行高，确保文字垂直居中 */
+  box-sizing: border-box;
+  /* 添加垂直居中对齐 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tag-item:hover {
@@ -341,10 +464,11 @@ select.field-input {
   display: none; /* 隐藏旧的复选框布局 */
 }
 
-/* 自定义下拉框样式 */
+/* 自定义下拉框样式 - 充分利用440px宽度 */
 .custom-select-container {
   position: relative;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .select-display {
@@ -352,12 +476,13 @@ select.field-input {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 16px; /* 增加内边距，适配更宽布局 */
   border: 1px solid #d1d5db;
   border-radius: 6px;
   background: white;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .select-display:hover {
@@ -377,11 +502,14 @@ select.field-input {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* 确保在440px宽度下显示更多文本 */
+  padding-right: 8px;
 }
 
 .select-value:empty::before {
   content: attr(placeholder);
   color: #9ca3af;
+  font-size: 14px; /* 确保占位符也是14px */
 }
 
 .select-arrow {
@@ -416,7 +544,7 @@ select.field-input {
   transform: scale(0.95);
 }
 
-/* 下拉选项列表 */
+/* 下拉选项列表 - 充分利用440px宽度 */
 .select-dropdown {
   position: absolute;
   top: 100%;
@@ -428,8 +556,11 @@ select.field-input {
   border-top: none;
   border-radius: 0 0 6px 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-height: 200px;
+  max-height: 240px; /* 增加最大高度，适配更宽布局 */
   overflow-y: auto;
+  /* 确保下拉菜单充分利用容器宽度 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .select-dropdown.hidden {
@@ -437,12 +568,20 @@ select.field-input {
 }
 
 .select-option {
-  padding: 10px 12px;
+  padding: 6px 12px; /* 与标签保持一致的padding */
   cursor: pointer;
   transition: background-color 0.2s ease;
   border-bottom: 1px solid #f3f4f6;
-  font-size: 14px;
-  color: #374151;
+  font-size: 14px; /* 调整为14px */
+  font-weight: 500; /* 与标签保持一致的字体粗细 */
+  color: #495057; /* 与标签保持一致的颜色 */
+  /* 确保选项充分利用440px宽度 */
+  width: 100%;
+  box-sizing: border-box;
+  /* 设置固定高度和垂直居中 */
+  height: 40px; /* 保持40px高度 */
+  display: flex;
+  align-items: center;
 }
 
 .select-option:last-child {
@@ -450,7 +589,7 @@ select.field-input {
 }
 
 .select-option:hover {
-  background-color: #f8fafc;
+  background-color: #e2e8f0; /* 更深的蓝灰色 */
   color: #1f2937;
 }
 
@@ -474,6 +613,10 @@ select.field-input {
 .add-option-content i {
   margin-right: 8px;
   font-size: 12px;
+}
+
+.add-option-content span {
+  font-size: 14px; /* 新增选项文字14px */
 }
 
 /* 新增选项输入框 */
@@ -549,24 +692,24 @@ select.field-input {
   word-break: break-all;
 }
 
-/* 保存按钮 */
+/* 保存按钮 - 在固定底部中的样式 */
 .save-btn {
   width: 100%;
-  padding: 12px;
+  padding: 8px 16px; /* 减小padding，让按钮更精致 */
   background-color: #2563eb;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 14px; /* 减小字体大小 */
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  margin-top: 8px;
+  gap: 6px; /* 减小内部间距 */
+  min-height: 36px; /* 减小最小高度 */
+  /* 移除margin-top，因为由gap控制间距 */
 }
 
 .save-btn:hover:not(:disabled) {
@@ -636,19 +779,7 @@ select.field-input {
   animation: spin 1s linear infinite;
 }
 
-/* 表单底部操作区 */
-.form-actions {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-  border-radius: 0 0 8px 8px;
-  margin: 20px -20px -20px -20px;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* 旧的form-actions样式已移除 - 现在使用.footer替代 */
 
 /* 表单状态区 */
 .form-status {
@@ -871,39 +1002,57 @@ select.field-input {
   color: #dc3545 !important;
 }
 
-/* 滚动条样式 */
+/* 优化滚动条样式 - 只在需要时显示 */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(0, 0, 0, 0.3);
 }
 
-/* 响应式调整 */
+/* Firefox 滚动条样式 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+
+/* 响应式调整 - 适配新布局架构 */
 @media (max-width: 480px) {
   body {
     width: 100vw;
-    padding: 10px;
+    min-width: 100vw;
   }
 
   .app-container {
+    max-width: 100vw;
     max-height: 100vh;
-    border-radius: 8px;
+    border-radius: 0; /* 保持矩形设计 */
+    min-height: auto;
   }
 
-  .btn {
-    width: 100%;
+  .header {
+    padding: 10px 16px;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+
+  .footer {
+    padding: 12px 16px;
   }
 
   .confirm-content {
