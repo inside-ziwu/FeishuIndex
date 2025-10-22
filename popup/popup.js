@@ -505,8 +505,14 @@ class PopupManager {
       const defaultValue = this.getDefaultPageValue();
       if (defaultValue) {
         input.value = defaultValue;
+        // 🔥 关键修复：手动更新userInput，因为程序化设置不会触发input事件
         this.userInput[field.name] = defaultValue;
         console.log(`✅ 第一个文本字段 "${field.name}" 已填充默认值: ${defaultValue.substring(0, 50)}...`);
+        console.log(`🔍 文本字段 "${field.name}" userInput同步设置:`, {
+          value: defaultValue,
+          userInputValue: this.userInput[field.name],
+          length: defaultValue.length
+        });
       }
     } else {
       // 其他文本字段使用多行文本框
@@ -1032,11 +1038,25 @@ class PopupManager {
 
   /**
    * 处理多选字段提交（保留选中标签和原始输入）
+   * 🔥 修复：确保所有字段值都正确传递，特别是文本字段
    */
   processMultiSelectFieldsForSubmit() {
-    const processedInput = { ...this.userInput };
+    // 🔥 关键修复：完整复制所有用户输入，确保文本字段不丢失
+    const processedInput = JSON.parse(JSON.stringify(this.userInput));
 
-    // 遍历所有字段，查找多选字段
+    // 🔥 调试日志：记录原始输入数据
+    console.log('🔍 提交前的完整用户输入数据:', {
+      userInput: this.userInput,
+      processedInputClone: processedInput,
+      textFields: this.fieldsData?.textFields?.map(field => ({
+        name: field.name,
+        value: processedInput[field.name],
+        hasValue: !!processedInput[field.name]
+      })) || [],
+      timestamp: new Date().toISOString()
+    });
+
+    // 遍历所有字段，查找多选字段进行特殊处理
     this.fieldsData.multiFields.forEach(field => {
       const rawInputKey = `${field.name}_rawInput`;
 
@@ -1061,11 +1081,24 @@ class PopupManager {
       }
     });
 
+    // 🔥 最终验证：确保文本字段值都在
+    if (this.fieldsData?.textFields) {
+      this.fieldsData.textFields.forEach(field => {
+        const fieldValue = processedInput[field.name];
+        console.log(`🔍 文本字段 "${field.name}" 提交验证:`, {
+          hasValue: !!fieldValue,
+          value: fieldValue?.substring(0, 50) + (fieldValue?.length > 50 ? '...' : ''),
+          isEmpty: fieldValue === '' || fieldValue === undefined || fieldValue === null
+        });
+      });
+    }
+
     return processedInput;
   }
 
   /**
    * 初始化用户输入
+   * 🔥 修复：确保文本字段能正确获取默认值
    */
   initializeUserInput() {
     this.userInput = {
@@ -1075,8 +1108,39 @@ class PopupManager {
     // 为其他字段设置默认值
     this.fieldsData.allSupportedFields.forEach(field => {
       if (field.type !== 'link') {
-        this.userInput[field.name] = '';
+        // 🔥 关键修复：文本字段需要特殊处理，确保能获取默认页面值
+        if (field.type === 'text') {
+          // 检查是否是第一个文本字段（用于填充页面信息）
+          const textFieldsBeforeCurrent = this.fieldsData.allSupportedFields
+            .slice(0, this.fieldsData.allSupportedFields.indexOf(field))
+            .filter(f => f.type === 'text');
+
+          const isFirstTextField = textFieldsBeforeCurrent.length === 0;
+
+          if (isFirstTextField) {
+            const defaultValue = this.getDefaultPageValue();
+            this.userInput[field.name] = defaultValue || '';
+            console.log(`🔧 初始化: 文本字段 "${field.name}" 设置默认值:`, {
+              defaultValue: defaultValue?.substring(0, 50) + '...',
+              isEmpty: !defaultValue,
+              userInputValue: this.userInput[field.name]
+            });
+          } else {
+            this.userInput[field.name] = '';
+          }
+        } else {
+          this.userInput[field.name] = '';
+        }
       }
+    });
+
+    console.log('🔧 完整的userInput初始化结果:', {
+      url: this.userInput.url,
+      textFields: this.fieldsData?.textFields?.map(field => ({
+        name: field.name,
+        value: this.userInput[field.name]?.substring(0, 50) + '...',
+        hasValue: !!this.userInput[field.name]
+      })) || []
     });
   }
 

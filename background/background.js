@@ -26,16 +26,16 @@ try {
     throw new Error(`关键依赖缺失: ${dependencyCheck.errors.join(', ')}`);
   }
 
-  console.log('✅ FeishuIndex v1.0.1 - 依赖模块加载成功（正确的依赖顺序）');
+  console.log('✅ FeishuIndex v1.0.2 - 依赖模块加载成功（正确的依赖顺序）');
 
   // 启动时执行一次性历史缓存清理
   migrateLegacyCache();
 } catch (error) {
-  console.error('❌ FeishuIndex v1.0.1 - 依赖模块加载失败:', error);
+  console.error('❌ FeishuIndex v1.0.2 - 依赖模块加载失败:', error);
 }
 
 // 启动日志
-console.log('🚀 FeishuIndex v1.0.1 Service Worker 启动完成', {
+console.log('🚀 FeishuIndex v1.0.2 Service Worker 启动完成', {
   timestamp: new Date().toISOString(),
   userAgent: navigator.userAgent
 });
@@ -966,4 +966,4 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
-console.log('FeishuIndex background.js 已加载');
+console.log('FeishuIndex v1.0.2 background.js 已加载');
