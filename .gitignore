@@ -40,7 +40,9 @@ src/
 *.crx
 *.pem
 key.pem
-# dist/ 目录包含重要文件，不忽略
+
+# 构建产物 - 忽略dist目录，通过build.sh生成
+dist/
 
 # 开发调试文件
 *.tmp
