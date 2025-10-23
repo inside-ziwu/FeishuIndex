@@ -212,7 +212,7 @@ git pull origin main
 
 ## 📞 技术支持
 
-- **项目文档**: 查看 `FeishuIndex完整技术方案.md`
+- **项目文档**: 查看 `docs/FeishuIndex完整技术方案.md`
 - **问题反馈**: 通过项目Issues提交
 - **开发交流**: 参考项目README.md
 

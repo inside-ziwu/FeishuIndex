@@ -144,7 +144,7 @@ cp options/* dist/options/
 
 - 🐛 **问题反馈**: [GitHub Issues](https://github.com/your-username/FeishuIndex/issues)
 - 📧 **邮箱**: your-email@example.com
-- 📖 **文档**: [完整技术方案](FeishuIndex完整技术方案.md)
+- 📖 **文档**: [完整技术方案](docs/FeishuIndex完整技术方案.md)
 
 ---
 

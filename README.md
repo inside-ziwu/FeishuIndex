@@ -144,8 +144,10 @@ Feishuindex/
 │   └── README.md
 └── docs/                  # 技术文档
     ├── FeishuIndex完整技术方案.md
-    ├── PRD_v1.4.md
-    └── ...
+    ├── 开发提示词.md
+    ├── 架构分析报告.md
+    ├── 测试提示词.md
+    └── README.md
 ```
 
 ## 🔧 开发指南
@@ -213,7 +215,7 @@ Feishuindex/
 ## 📞 支持
 
 如有问题，请：
-1. 查看 [技术方案文档](./FeishuIndex完整技术方案.md)
+1. 查看 [技术方案文档](./docs/FeishuIndex完整技术方案.md)
 2. 检查 [常见问题](./docs/FAQ.md)
 3. 提交 [Issue](https://github.com/your-repo/issues)
 
