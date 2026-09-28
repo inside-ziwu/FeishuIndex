@@ -120,7 +120,7 @@ FeishuIndex是一个基于Manifest V3的Chrome扩展，核心功能是将浏览�
 Feishuindex/
 ├── manifest.json           # MV3配置文件
 ├── README.md              # 项目说明
-├── CLAUDE.md              # AI开发指导
+├── AGENTS.md              # AI开发指导
 ├── 开发提示词.md            # 开发者指南
 ├── 测试提示词.md            # 测试指南
 ├── popup/                 # 弹窗界面

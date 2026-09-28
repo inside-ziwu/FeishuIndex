@@ -14,7 +14,7 @@
 ### 项目文档
 - **[安装指南](../INSTALL.md)** - 项目安装和配置说明
 - **[GitHub README](../GITHUB_README.md)** - 开源项目展示文档
-- **[项目配置](../CLAUDE.md)** - Claude Code 项目配置和开发指南
+- **[项目配置](../AGENTS.md)** - Claude Code 项目配置和开发指南
 
 ## 🎯 快速导航
 
