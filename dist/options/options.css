@@ -31,7 +31,7 @@ body {
   padding: 40px 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 12px;
-  color: white;
+  color: #ffffff;
   box-shadow: 0 8px 32px rgba(102, 126, 234, 0.1);
 }
 
@@ -52,13 +52,13 @@ body {
 .main {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 12px;
 }
 
 /* 配置区块 */
 .config-section {
-  background: white;
-  padding: 30px;
+  background: #ffffff;
+  padding: 25px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #e9ecef;
@@ -73,30 +73,60 @@ body {
   font-size: 1.5em;
   color: #2c3e50;
   margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f1f3f4;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+/* 配置子区域 */
+.config-subsection h3 {
+  font-size: 1.5em;
+  color: #495057;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 双列布局（子区域） */
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: start;
+  margin-bottom: 0px;
+}
+
+.config-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
 /* 表单样式 */
 .form-group {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
   font-weight: 600;
   color: #495057;
-  margin-bottom: 8px;
-  font-size: 1.1em;
+  margin-bottom: 6px;
+  font-size: 1em;
 }
 
 .form-input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 2px solid #e9ecef;
   border-radius: 8px;
-  font-size: 1em;
+  font-size: 0.95em;
   transition: all 0.3s ease;
   background-color: #fff;
 }
@@ -119,16 +149,16 @@ body {
 }
 
 .password-input .form-input {
-  padding-right: 60px;
+  padding-right: 50px;
 }
 
 .toggle-btn {
   position: absolute;
-  right: 12px;
+  right: 10px;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.2em;
+  font-size: 1.1em;
   padding: 4px;
   border-radius: 4px;
   transition: background-color 0.2s ease;
@@ -140,33 +170,38 @@ body {
 
 /* 帮助文本 */
 .help-text {
-  font-size: 0.9em;
+  font-size: 0.85em;
   color: #6c757d;
-  margin-top: 6px;
-  font-style: italic;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 
 /* 操作按钮 */
 .actions {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
 }
 
 .btn {
-  padding: 12px 24px;
+  padding: 10px 20px;
   border: none;
   border-radius: 8px;
-  font-size: 1em;
+  font-size: 0.95em;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-decoration: none;
-  min-width: 140px;
+  min-width: 120px;
   justify-content: center;
 }
 
@@ -177,7 +212,7 @@ body {
 
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -187,7 +222,7 @@ body {
 
 .btn-secondary {
   background: #6c757d;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -197,7 +232,7 @@ body {
 
 .btn-danger {
   background: #dc3545;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-danger:hover:not(:disabled) {
@@ -207,7 +242,7 @@ body {
 
 /* 测试结果 */
 .test-result {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
@@ -243,7 +278,7 @@ body {
 
 /* 使用说明 */
 .help-section {
-  background: white;
+  background: #ffffff;
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -283,7 +318,7 @@ body {
 
 /* 字段类型展示 */
 .field-types {
-  background: white;
+  background: #ffffff;
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -293,19 +328,18 @@ body {
   color: #2c3e50;
   margin-bottom: 25px;
   font-size: 1.5em;
-  text-align: center;
 }
 
 .field-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
   margin-top: 25px;
 }
 
 .field-card {
   text-align: center;
-  padding: 25px;
+  padding: 15px;
   border-radius: 12px;
   border: 2px solid #e9ecef;
   transition: all 0.3s ease;
@@ -319,28 +353,27 @@ body {
 }
 
 .field-card.required {
-  border-color: #28a745;
-  background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+  /* 背景色统一为默认（白色） */
 }
 
 .field-icon {
-  font-size: 3em;
-  margin-bottom: 15px;
+  font-size: 2em;
+  margin-bottom: 10px;
 }
 
 .field-card h3 {
   color: #2c3e50;
-  margin-bottom: 10px;
-  font-size: 1.3em;
+  margin-bottom: 6px;
+  font-size: 1.1em;
 }
 
 .field-card p {
   color: #6c757d;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
-.required-tag,
-.optional-tag {
+.field-card .required-tag,
+.field-card .optional-tag {
   position: absolute;
   top: 15px;
   right: 15px;
@@ -349,16 +382,8 @@ body {
   font-size: 0.8em;
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.required-tag {
   background: #28a745;
-  color: white;
-}
-
-.optional-tag {
-  background: #6c757d;
-  color: white;
+  color: #ffffff !important;
 }
 
 /* 页脚 */
@@ -384,7 +409,7 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 9999;
-  color: white;
+  color: #ffffff;
 }
 
 .loading-overlay.hidden {
@@ -395,7 +420,7 @@ body {
   width: 40px;
   height: 40px;
   border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top: 4px solid white;
+  border-top: 4px solid #ffffff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
@@ -418,7 +443,7 @@ body {
 }
 
 .message {
-  background: white;
+  background: #ffffff;
   padding: 15px 20px;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -487,6 +512,11 @@ body {
     font-size: 2em;
   }
 
+  .config-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
   .config-section {
     padding: 20px;
   }
@@ -515,44 +545,45 @@ body {
 
 /* 缓存管理样式 */
 .cache-section {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 25px;
+  padding: 20px;
+  margin-bottom: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border: 1px solid #e9ecef;
 }
 
 .cache-section h2 {
   color: #495057;
-  margin-bottom: 20px;
-  font-size: 1.3em;
-  border-bottom: 2px solid #f1f3f4;
-  padding-bottom: 10px;
+  margin-bottom: 0px;
+  font-size: 1.5em;
+  padding-bottom: 8px;
 }
 
 .cache-buttons {
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
 .cache-buttons .btn {
-  min-width: 160px;
+  min-width: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.9em;
 }
 
 .btn-warning {
   background: linear-gradient(135deg, #ff9500 0%, #ff7043 100%);
-  color: white;
+  color: #ffffff;
   border: none;
-  padding: 12px 20px;
+  padding: 8px 16px;
   border-radius: 8px;
-  font-size: 0.95em;
+  font-size: 0.9em;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -574,9 +605,9 @@ body {
 .cache-section .help-text {
   background: #f8f9fa;
   border-left: 4px solid #ff9500;
-  padding: 15px;
+  padding: 12px;
   border-radius: 6px;
-  margin-top: 15px;
+  margin-top: 12px;
 }
 
 .cache-section .help-text p {

@@ -9,44 +9,55 @@
 <body>
   <div class="container">
     <header class="header">
-      <h1>⚙️ FeishuIndex 配置</h1>
+      <h1>⚙️ 飞书剪存插件配置</h1>
       <p class="subtitle">将网页URL保存到飞书多维表格</p>
     </header>
 
     <main class="main">
-      <!-- 配置表单 -->
+      <!-- 配置区域（合并到一个卡片） -->
       <section class="config-section">
-        <h2>🚀 飞书应用配置</h2>
-        <div class="form-group">
-          <label for="appId">App ID:</label>
-          <input type="text" id="appId" placeholder="cli_xxxxxxxxxxxxxxxxxxxxxx" class="form-input">
-          <div class="help-text">在飞书开放平台获取应用ID</div>
-        </div>
 
-        <div class="form-group">
-          <label for="appSecret">App Secret:</label>
-          <div class="password-input">
-            <input type="password" id="appSecret" placeholder="••••••••••••••••••••••••••••••••" class="form-input">
-            <button type="button" id="toggleSecret" class="toggle-btn">👁 显示</button>
+        <div class="config-grid">
+          <div class="config-subsection">
+            <h3>🚀 应用信息</h3>
+            <div class="form-group">
+              <label for="appId">App ID:</label>
+              <input type="text" id="appId" placeholder="cli_xxxxxxxxxxxxxxxxxxxxxx" class="form-input">
+              <div class="help-text">在飞书开放平台获取应用ID</div>
+            </div>
+
+            <div class="form-group">
+              <label for="appSecret">App Secret:</label>
+              <div class="password-input">
+                <input type="password" id="appSecret" placeholder="••••••••••••••••••••••••••••••••" class="form-input">
+                <button type="button" id="toggleSecret" class="toggle-btn">👁 显示</button>
+              </div>
+              <div class="help-text">在飞书开放平台获取应用密钥</div>
+            </div>
           </div>
-          <div class="help-text">在飞书开放平台获取应用密钥</div>
-        </div>
-      </section>
 
-      <section class="config-section">
-        <h2>📊 表格配置</h2>
-        <div class="form-group">
-          <label for="tableUrl">表格URL:</label>
-          <input type="url" id="tableUrl" placeholder="https://feishu.cn/base/bxxxxxx..." class="form-input">
-          <div class="help-text">粘贴飞书多维表格的链接</div>
-        </div>
-      </section>
+          <div class="config-subsection">
+            <h3>📊 多维表格信息</h3>
+            <div class="form-group">
+              <label for="appToken">多维表格 Token:</label>
+              <input type="text" id="appToken" placeholder="appbascnxxxxxx" class="form-input">
+              <div class="help-text">在URL中base/后面的字符串</div>
+            </div>
 
-      <!-- 操作按钮 -->
-      <section class="actions">
-        <button id="saveConfig" class="btn btn-primary" disabled>💾 保存配置</button>
-        <button id="testConnection" class="btn btn-secondary" disabled>🔗 测试连接</button>
-        <button id="clearConfig" class="btn btn-danger">🗑️ 清除配置</button>
+            <div class="form-group">
+              <label for="tableId">多维表格 ID:</label>
+              <input type="text" id="tableId" placeholder="tblxxx" class="form-input">
+              <div class="help-text">在URL中table=后面的字符串</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="config-actions">
+          <button id="saveConfig" class="btn btn-primary" disabled>💾 保存配置</button>
+          <button id="testConnection" class="btn btn-secondary" disabled>🔗 测试连接</button>
+          <button id="clearConfig" class="btn btn-danger">🗑️ 清除配置</button>
+        </div>
       </section>
 
       <!-- 缓存管理 -->
@@ -80,11 +91,11 @@
             <li>在权限管理中添加 "多维表格" 权限</li>
           </ol>
 
-          <h3>2. 表格配置</h3>
+          <h3>2. 多维表格配置</h3>
           <ol>
             <li>打开要使用的飞书多维表格</li>
             <li>复制浏览器地址栏中的URL</li>
-            <li>确保表格中有链接类型的字段（必需）</li>
+            <li>确保多维表格中有链接类型的字段（必需）</li>
             <li>可以添加文本、单选、多选字段（可选）</li>
           </ol>
 
@@ -93,7 +104,7 @@
             <li>完成配置并通过连接测试</li>
             <li>在任意网页点击扩展图标</li>
             <li>填写信息并点击保存</li>
-            <li>数据将自动保存到您的飞书表格中</li>
+            <li>数据将自动保存到您的飞书多维表格中</li>
           </ol>
         </div>
       </section>
@@ -138,7 +149,7 @@
     </main>
 
     <footer class="footer">
-      <p>FeishuIndex v1.0.0 | 将网页一键保存到飞书表格</p>
+      <p>FeishuIndex v1.1.0 | 将网页一键保存到飞书多维表格</p>
     </footer>
   </div>
 

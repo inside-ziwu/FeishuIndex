@@ -235,7 +235,7 @@ class PopupManager {
       const config = configResponse.config;
 
       // 检查配置完整性
-      if (!config.appId || !config.appSecret || !config.tableUrl) {
+      if (!config.appId || !config.appSecret || !config.appToken || !config.tableId) {
         this.showError('config');
         return;
       }
@@ -249,7 +249,8 @@ class PopupManager {
         try {
           fieldsResponse = await chrome.runtime.sendMessage({
             type: 'GET_FIELDS',
-            tableUrl: config.tableUrl
+            appToken: config.appToken,
+            tableId: config.tableId
           });
           break;
         } catch (error) {
@@ -1531,21 +1532,11 @@ class PopupManager {
       const configResponse = await chrome.runtime.sendMessage({ type: 'GET_CONFIG' });
       if (configResponse.success) {
         const config = configResponse.config;
-        // 通过消息传递获取URL解析结果，避免重复实现
-        const parseResponse = await chrome.runtime.sendMessage({
-          type: 'PARSE_TABLE_URL',
-          tableUrl: config.tableUrl
-        });
-
-        if (!parseResponse.success) {
-          throw new Error('URL解析失败: ' + parseResponse.error);
-        }
-
-        const { app_token, table_id } = parseResponse.result;
 
         await chrome.runtime.sendMessage({
           type: 'CLEAR_CACHE',
-          tableUrl: config.tableUrl
+          appToken: config.appToken,
+          tableId: config.tableId
         });
       }
 
@@ -1570,7 +1561,8 @@ class PopupManager {
 
         await chrome.runtime.sendMessage({
           type: 'CLEAR_OPTIONS_CACHE',
-          tableUrl: config.tableUrl
+          appToken: config.appToken,
+          tableId: config.tableId
         });
 
         // 重新加载字段（这会重新获取选项）

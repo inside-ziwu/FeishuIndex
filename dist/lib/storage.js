@@ -12,7 +12,8 @@ const STORAGE_KEYS = {
   // 用户配置
   APP_ID: 'feishu_app_id',
   APP_SECRET: 'feishu_app_secret',
-  TABLE_URL: 'feishu_table_url',
+  APP_TOKEN: 'feishu_app_token',
+  TABLE_ID: 'feishu_table_id',
 
   // 其他状态
   LAST_SAVE_TIME: 'feishu_last_save_time',
@@ -28,7 +29,8 @@ class StorageManager {
    * @param {Object} config - 配置对象
    * @param {string} config.appId - 应用ID
    * @param {string} config.appSecret - 应用密钥
-   * @param {string} config.tableUrl - 表格URL
+   * @param {string} config.appToken - 表格Token
+   * @param {string} config.tableId - 表格ID
    * @returns {Promise<void>}
    */
   async saveConfig(config) {
@@ -41,11 +43,14 @@ class StorageManager {
       if (config.appSecret) {
         data[STORAGE_KEYS.APP_SECRET] = config.appSecret;
       }
-      if (config.tableUrl) {
-        data[STORAGE_KEYS.TABLE_URL] = config.tableUrl;
+      if (config.appToken) {
+        data[STORAGE_KEYS.APP_TOKEN] = config.appToken;
+      }
+      if (config.tableId) {
+        data[STORAGE_KEYS.TABLE_ID] = config.tableId;
       }
 
-      data[STORAGE_KEYS.CONFIG_VERSION] = '1.0.0';
+      data[STORAGE_KEYS.CONFIG_VERSION] = '1.1.0';
 
       await chrome.storage.local.set(data);
     } catch (error) {
@@ -62,14 +67,16 @@ class StorageManager {
       const result = await chrome.storage.local.get([
         STORAGE_KEYS.APP_ID,
         STORAGE_KEYS.APP_SECRET,
-        STORAGE_KEYS.TABLE_URL,
+        STORAGE_KEYS.APP_TOKEN,
+        STORAGE_KEYS.TABLE_ID,
         STORAGE_KEYS.CONFIG_VERSION
       ]);
 
       return {
         appId: result[STORAGE_KEYS.APP_ID] || '',
         appSecret: result[STORAGE_KEYS.APP_SECRET] || '',
-        tableUrl: result[STORAGE_KEYS.TABLE_URL] || '',
+        appToken: result[STORAGE_KEYS.APP_TOKEN] || '',
+        tableId: result[STORAGE_KEYS.TABLE_ID] || '',
         version: result[STORAGE_KEYS.CONFIG_VERSION] || ''
       };
     } catch (error) {
@@ -87,14 +94,16 @@ class StorageManager {
 
       const hasAppId = config.appId && config.appId.trim() !== '';
       const hasAppSecret = config.appSecret && config.appSecret.trim() !== '';
-      const hasTableUrl = config.tableUrl && config.tableUrl.trim() !== '';
+      const hasAppToken = config.appToken && config.appToken.trim() !== '';
+      const hasTableId = config.tableId && config.tableId.trim() !== '';
 
       return {
-        valid: hasAppId && hasAppSecret && hasTableUrl,
+        valid: hasAppId && hasAppSecret && hasAppToken && hasTableId,
         missing: {
           appId: !hasAppId,
           appSecret: !hasAppSecret,
-          tableUrl: !hasTableUrl
+          appToken: !hasAppToken,
+          tableId: !hasTableId
         },
         config: config
       };

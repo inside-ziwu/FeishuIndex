@@ -183,8 +183,8 @@ async function updateExistingRecord(request, sendResponse) {
 
     const config = configResult.config;
 
-    // 3. 解析表格URL
-    const { app_token, table_id } = feishuAPI.parseTableUrl(config.tableUrl);
+    // 3. 直接从配置中获取appToken和tableId（不再解析）
+    const { app_token, table_id } = { app_token: config.appToken, table_id: config.tableId };
 
     // 4. 获取Token
     const tenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
@@ -289,8 +289,8 @@ async function saveUrlRecord(request, sendResponse) {
 
     config = configResult.config;
 
-    // 3. 解析表格URL
-    ({ app_token, table_id } = feishuAPI.parseTableUrl(config.tableUrl));
+    // 3. 直接从配置中获取appToken和tableId（不再解析）
+    ({ app_token, table_id } = { app_token: config.appToken, table_id: config.tableId });
 
     // 4. 获取Token
     const tenantToken = await feishuAPI.getTenantToken(config.appId, config.appSecret);
@@ -618,7 +618,8 @@ async function handleConnectionTest(config) {
     const result = await feishuAPI.testConnection(
       config.appId,
       config.appSecret,
-      config.tableUrl
+      config.appToken,
+      config.tableId
     );
 
     if (result.success) {
@@ -657,24 +658,26 @@ async function handleConnectionTest(config) {
 
 /**
  * 获取字段信息处理
- * @param {string} tableUrl - 表格URL
+ * @param {string} appToken - 表格Token
+ * @param {string} tableId - 表格ID
  * @returns {Promise<Object>} - 字段信息
  */
-async function handleGetFields(tableUrl) {
+async function handleGetFields(appToken, tableId) {
   try {
-    console.log('🔍 开始获取字段信息:', tableUrl);
+    console.log('🔍 开始获取字段信息:', { appToken, tableId });
 
     // 直接使用工作版本的方式
     const config = await Storage.storage.getConfig();
 
-    if (!config.appId || !config.appSecret) {
+    if (!config.appId || !config.appSecret || !appToken || !tableId) {
       return {
         success: false,
         error: '请先完成飞书应用配置'
       };
     }
 
-    const { app_token, table_id } = feishuAPI.parseTableUrl(tableUrl);
+    // 直接使用传入的appToken和tableId（不再解析）
+    const { app_token, table_id } = { app_token: appToken, table_id: tableId };
 
     // 使用统一的缓存键管理器构建复合tableId
     const actualTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(app_token, table_id);
@@ -749,7 +752,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case 'GET_FIELDS':
-      handleGetFields(request.tableUrl).then(sendResponse);
+      handleGetFields(request.appToken, request.tableId).then(sendResponse);
       return true;
 
     case 'GET_CONFIG':
@@ -770,7 +773,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case 'CLEAR_CACHE':
-      const { app_token, table_id } = feishuAPI.parseTableUrl(request.tableUrl);
+      // 直接从消息中获取appToken和tableId（不再解析）
+      const { app_token, table_id } = { app_token: request.appToken, table_id: request.tableId };
 
       // 使用新的彻底清理方法，一次性清理所有可能的缓存格式
       Storage.storage.clearAllPossibleCaches(app_token, table_id)
@@ -786,7 +790,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'CLEAR_OPTIONS_CACHE':
       // 只清理选项缓存，保留字段列表缓存
-      const { app_token: options_app_token, table_id: options_table_id } = feishuAPI.parseTableUrl(request.tableUrl);
+      // 直接从消息中获取appToken和tableId（不再解析）
+      const { app_token: options_app_token, table_id: options_table_id } = { app_token: request.appToken, table_id: request.tableId };
       const optionsTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(options_app_token, options_table_id);
       Storage.storage.clearOptionsCache(optionsTableId).then(() => {
         sendResponse({ success: true });
@@ -831,15 +836,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         try {
           // 1. 获取配置
           const config = await Storage.storage.getConfig();
-          if (!config.appId || !config.appSecret || !config.tableUrl) {
+          if (!config.appId || !config.appSecret || !config.appToken || !config.tableId) {
             return sendResponse({
               success: false,
               error: '配置不完整，无法刷新字段缓存'
             });
           }
 
-          // 2. 解析表格URL
-          const { app_token, table_id } = feishuAPI.parseTableUrl(config.tableUrl);
+          // 2. 直接从配置中获取appToken和tableId（不再解析）
+          const { app_token, table_id } = { app_token: config.appToken, table_id: config.tableId };
           const actualTableId = globalThis.CacheKeyManager.CacheKeyManager.buildTableId(app_token, table_id);
 
           // 3. 清除现有缓存

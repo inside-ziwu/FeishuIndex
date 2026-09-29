@@ -17,7 +17,8 @@ class OptionsManager {
     // 表单元素
     this.appIdInput = document.getElementById('appId');
     this.appSecretInput = document.getElementById('appSecret');
-    this.tableUrlInput = document.getElementById('tableUrl');
+    this.appTokenInput = document.getElementById('appToken');
+    this.tableIdInput = document.getElementById('tableId');
 
     // 按钮
     this.saveConfigBtn = document.getElementById('saveConfig');
@@ -45,7 +46,8 @@ class OptionsManager {
     // 输入框变化事件
     this.appIdInput.addEventListener('input', () => this.validateForm());
     this.appSecretInput.addEventListener('input', () => this.validateForm());
-    this.tableUrlInput.addEventListener('input', () => this.validateForm());
+    this.appTokenInput.addEventListener('input', () => this.validateForm());
+    this.tableIdInput.addEventListener('input', () => this.validateForm());
 
     // 按钮点击事件
     this.saveConfigBtn.addEventListener('click', () => this.saveConfig());
@@ -57,13 +59,8 @@ class OptionsManager {
     this.clearFieldCacheBtn.addEventListener('click', () => this.clearFieldCache());
     this.clearOptionsCacheBtn.addEventListener('click', () => this.clearOptionsCache());
 
-    // 表单提交事件
-    document.querySelectorAll('form').forEach(form => {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.saveConfig();
-      });
-    });
+    // 表单提交事件（已移除form元素，不再需要）
+    // 保存按钮点击事件已单独绑定
   }
 
   /**
@@ -72,26 +69,15 @@ class OptionsManager {
   validateForm() {
     const appId = this.appIdInput.value.trim();
     const appSecret = this.appSecretInput.value.trim();
-    const tableUrl = this.tableUrlInput.value.trim();
+    const appToken = this.appTokenInput.value.trim();
+    const tableId = this.tableIdInput.value.trim();
 
-    const isValid = appId && appSecret && tableUrl && this.isValidUrl(tableUrl);
+    const isValid = appId && appSecret && appToken && tableId;
 
     this.saveConfigBtn.disabled = !isValid;
     this.testConnectionBtn.disabled = !isValid;
 
     return isValid;
-  }
-
-  /**
-   * 验证URL格式
-   */
-  isValidUrl(url) {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.hostname.includes('feishu.cn');
-    } catch {
-      return false;
-    }
   }
 
   /**
@@ -158,8 +144,11 @@ class OptionsManager {
         if (config.appSecret) {
           this.appSecretInput.value = config.appSecret;
         }
-        if (config.tableUrl) {
-          this.tableUrlInput.value = config.tableUrl;
+        if (config.appToken) {
+          this.appTokenInput.value = config.appToken;
+        }
+        if (config.tableId) {
+          this.tableIdInput.value = config.tableId;
         }
 
         this.validateForm();
@@ -187,7 +176,8 @@ class OptionsManager {
     const config = {
       appId: this.appIdInput.value.trim(),
       appSecret: this.appSecretInput.value.trim(),
-      tableUrl: this.tableUrlInput.value.trim()
+      appToken: this.appTokenInput.value.trim(),
+      tableId: this.tableIdInput.value.trim()
     };
 
     try {
@@ -228,7 +218,8 @@ class OptionsManager {
     const config = {
       appId: this.appIdInput.value.trim(),
       appSecret: this.appSecretInput.value.trim(),
-      tableUrl: this.tableUrlInput.value.trim()
+      appToken: this.appTokenInput.value.trim(),
+      tableId: this.tableIdInput.value.trim()
     };
 
     try {
@@ -311,7 +302,8 @@ class OptionsManager {
       // 清除本地输入
       this.appIdInput.value = '';
       this.appSecretInput.value = '';
-      this.tableUrlInput.value = '';
+      this.appTokenInput.value = '';
+      this.tableIdInput.value = '';
 
       // 清除存储的配置和所有缓存
       // 首先获取所有存储项，找到所有相关的缓存键
@@ -320,8 +312,12 @@ class OptionsManager {
         // 用户配置
         'feishu_app_id',
         'feishu_app_secret',
-        'feishu_table_url',
+        'feishu_app_token',
+        'feishu_table_id',
         'feishu_config_version',
+
+        // 旧版本的表格URL（用于清理，如果存在）
+        'feishu_table_url',
 
         // 其他状态
         'feishu_last_save_time',
@@ -368,9 +364,10 @@ class OptionsManager {
    * 获取字段信息（用于调试）
    */
   async getFieldsInfo() {
-    const tableUrl = this.tableUrlInput.value.trim();
-    if (!tableUrl) {
-      this.showMessage('请先填写表格URL', 'warning');
+    const appToken = this.appTokenInput.value.trim();
+    const tableId = this.tableIdInput.value.trim();
+    if (!appToken || !tableId) {
+      this.showMessage('请先配置表格Token和ID', 'warning');
       return;
     }
 
@@ -379,7 +376,8 @@ class OptionsManager {
 
       const response = await chrome.runtime.sendMessage({
         type: 'GET_FIELDS',
-        tableUrl: tableUrl
+        appToken: appToken,
+        tableId: tableId
       });
 
       if (response.success) {
@@ -459,8 +457,10 @@ class OptionsManager {
    * 清理字段缓存
    */
   async clearFieldCache() {
-    if (!this.tableUrlInput.value.trim()) {
-      this.showMessage('请先配置表格URL', 'warning');
+    const appToken = this.appTokenInput.value.trim();
+    const tableId = this.tableIdInput.value.trim();
+    if (!appToken || !tableId) {
+      this.showMessage('请先配置表格Token和ID', 'warning');
       return;
     }
 
@@ -471,7 +471,8 @@ class OptionsManager {
 
       const response = await chrome.runtime.sendMessage({
         type: 'CLEAR_CACHE',
-        tableUrl: this.tableUrlInput.value.trim()
+        appToken: appToken,
+        tableId: tableId
       });
 
       if (response.success) {
@@ -509,8 +510,10 @@ class OptionsManager {
    * 清理选项缓存
    */
   async clearOptionsCache() {
-    if (!this.tableUrlInput.value.trim()) {
-      this.showMessage('请先配置表格URL', 'warning');
+    const appToken = this.appTokenInput.value.trim();
+    const tableId = this.tableIdInput.value.trim();
+    if (!appToken || !tableId) {
+      this.showMessage('请先配置表格Token和ID', 'warning');
       return;
     }
 
@@ -521,7 +524,8 @@ class OptionsManager {
 
       const response = await chrome.runtime.sendMessage({
         type: 'CLEAR_OPTIONS_CACHE',
-        tableUrl: this.tableUrlInput.value.trim()
+        appToken: appToken,
+        tableId: tableId
       });
 
       if (response.success) {
@@ -571,51 +575,39 @@ class OptionsManager {
         }
       });
 
-      // 检查表格URL解析
-      const tableUrl = this.tableUrlInput.value.trim();
-      if (tableUrl) {
-        console.log('=== 表格URL解析调试 ===');
-        console.log('原始URL:', tableUrl);
+      // 检查表格配置
+      const appToken = this.appTokenInput.value.trim();
+      const tableId = this.tableIdInput.value.trim();
+      if (appToken && tableId) {
+        console.log('=== 表格配置调试 ===');
+        console.log('App Token:', appToken);
+        console.log('Table ID:', tableId);
 
-        // 通过消息传递让background.js解析URL，避免重复实现
         try {
-          const response = await chrome.runtime.sendMessage({
-            type: 'PARSE_TABLE_URL',
-            tableUrl: tableUrl
+          // 通过消息传递获取正确的缓存键，确保与background.js一致
+          const cacheKeyResponse = await chrome.runtime.sendMessage({
+            type: 'GET_CACHE_KEYS',
+            app_token: appToken,
+            table_id: tableId
           });
 
-          if (response.success) {
-            const { app_token, table_id } = response.result;
-            console.log('解析出的app_token:', app_token);
-            console.log('解析出的table_id:', table_id);
+          if (cacheKeyResponse.success) {
+            const { actualTableId, fieldCacheKey, optionsCacheKey } = cacheKeyResponse.result;
 
-            if (app_token && table_id) {
-              // 通过消息传递获取正确的缓存键，确保与background.js一致
-              const cacheKeyResponse = await chrome.runtime.sendMessage({
-                type: 'GET_CACHE_KEYS',
-                app_token: app_token,
-                table_id: table_id
-              });
+            console.log('实际使用的tableId:', actualTableId);
+            console.log('实际字段缓存键:', fieldCacheKey);
+            console.log('实际选项缓存键:', optionsCacheKey);
 
-              if (cacheKeyResponse.success) {
-                const { actualTableId, fieldCacheKey, optionsCacheKey } = cacheKeyResponse.result;
+            const fieldCacheExists = Object.keys(allStorage).some(key => key === fieldCacheKey);
+            const optionsCacheExists = Object.keys(allStorage).some(key => key === optionsCacheKey);
 
-                console.log('实际使用的tableId:', actualTableId);
-                console.log('实际字段缓存键:', fieldCacheKey);
-                console.log('实际选项缓存键:', optionsCacheKey);
-
-                const fieldCacheExists = Object.keys(allStorage).some(key => key === fieldCacheKey);
-                const optionsCacheExists = Object.keys(allStorage).some(key => key === optionsCacheKey);
-
-                console.log('字段缓存存在:', fieldCacheExists);
-                console.log('选项缓存存在:', optionsCacheExists);
-              } else {
-                console.error('获取缓存键失败:', cacheKeyResponse.error);
-              }
-            }
+            console.log('字段缓存存在:', fieldCacheExists);
+            console.log('选项缓存存在:', optionsCacheExists);
+          } else {
+            console.error('获取缓存键失败:', cacheKeyResponse.error);
           }
         } catch (error) {
-          console.error('URL解析失败:', error);
+          console.error('获取缓存键失败:', error);
         }
       }
     } catch (error) {

@@ -533,16 +533,17 @@ class FeishuAPIClient {
    * 连通性测试
    * @param {string} appId - 应用ID
    * @param {string} appSecret - 应用密钥
-   * @param {string} tableUrl - 表格URL
+   * @param {string} appToken - 表格Token
+   * @param {string} tableId - 表格ID
    * @returns {Promise<Object>} - 测试结果
    */
-  async testConnection(appId, appSecret, tableUrl) {
+  async testConnection(appId, appSecret, appToken, tableId) {
     try {
       // 1. 获取Token
       const tenantToken = await this.getTenantToken(appId, appSecret);
 
-      // 2. 解析表格URL
-      const { app_token, table_id } = this.parseTableUrl(tableUrl);
+      // 2. 直接使用appToken和tableId（不再解析）
+      const { app_token, table_id } = { app_token: appToken, table_id: tableId };
 
       // 3. 获取字段列表
       const fields = await this.getTableFields(app_token, table_id, tenantToken);
